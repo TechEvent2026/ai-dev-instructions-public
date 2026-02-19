@@ -47,3 +47,8 @@
 
 まだアプリ本体のコード（`app/` や `components/` など）は未配置のため、
 必要に応じてこの README を更新してください。
+
+
+## アーキテクチャ
+
+![アーキテクチャ図](docs/architecture.drawio.png)
