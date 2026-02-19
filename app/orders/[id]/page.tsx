@@ -128,9 +128,9 @@ export default async function OrderDetailPage({
                       <dd className="font-medium">
                         {order.approvedAt
                           ? new Date(order.approvedAt).toLocaleDateString(
-                              "ja-JP",
-                              { year: "numeric", month: "long", day: "numeric" }
-                            )
+                            "ja-JP",
+                            { year: "numeric", month: "long", day: "numeric" }
+                          )
                           : "-"}
                       </dd>
                     </div>

@@ -30,7 +30,7 @@ interface Order {
   orderNumber: string;
   status: string;
   totalAmount: number;
-  createdAt: Date;
+  createdAtFormatted: string;
   requestedBy: { name: string | null; email: string | null };
 }
 
@@ -113,7 +113,7 @@ export function OrdersList({
                 ¥{order.totalAmount.toLocaleString()}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {new Date(order.createdAt).toLocaleDateString("ja-JP")}
+                {order.createdAtFormatted}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end gap-1">

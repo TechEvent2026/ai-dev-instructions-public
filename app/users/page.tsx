@@ -31,6 +31,10 @@ export default async function UsersPage() {
   }
 
   const users = await getUsers();
+  const formattedUsers = users.map((u) => ({
+    ...u,
+    createdAtFormatted: u.createdAt.toLocaleDateString("ja-JP"),
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,7 +53,7 @@ export default async function UsersPage() {
           </Link>
         </div>
 
-        <UsersList initialUsers={users} />
+        <UsersList initialUsers={formattedUsers} />
       </main>
     </div>
   );

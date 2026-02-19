@@ -4,6 +4,11 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { StockTrendChart, type StockChartDailyData } from "@/components/stock-trend-chart";
+import {
+  PartStockChart,
+  type PartOption,
+  type PartStockTrendMap,
+} from "@/components/part-stock-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -138,6 +143,92 @@ async function getStockTrendData(): Promise<StockChartDailyData[]> {
   return result;
 }
 
+async function getPartStockTrendData(): Promise<{
+  parts: PartOption[];
+  trendMap: PartStockTrendMap;
+}> {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+  // Fetch top 20 parts (by transaction activity) and their transactions
+  const partsWithTx = await prisma.part.findMany({
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      stock: true,
+      stockTransactions: {
+        where: { createdAt: { gte: thirtyDaysAgo } },
+        orderBy: { createdAt: "asc" },
+        select: { type: true, quantity: true, createdAt: true },
+      },
+    },
+    orderBy: { code: "asc" },
+    take: 20,
+  });
+
+  const parts: PartOption[] = partsWithTx.map((p) => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    currentStock: p.stock,
+  }));
+
+  const trendMap: PartStockTrendMap = {};
+
+  for (const part of partsWithTx) {
+    // Build daily map
+    const dailyMap = new Map<
+      string,
+      { inQty: number; outQty: number; adjustQty: number; netChange: number }
+    >();
+
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(thirtyDaysAgo);
+      d.setDate(d.getDate() + i);
+      const key = `${d.getMonth() + 1}/${d.getDate()}`;
+      dailyMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
+    }
+
+    for (const tx of part.stockTransactions) {
+      const d = new Date(tx.createdAt);
+      const key = `${d.getMonth() + 1}/${d.getDate()}`;
+      const day = dailyMap.get(key);
+      if (!day) continue;
+
+      if (tx.type === "IN") {
+        day.inQty += tx.quantity;
+        day.netChange += tx.quantity;
+      } else if (tx.type === "OUT") {
+        day.outQty += tx.quantity;
+        day.netChange -= tx.quantity;
+      } else if (tx.type === "ADJUST") {
+        day.adjustQty += tx.quantity;
+      }
+    }
+
+    const entries = Array.from(dailyMap.entries());
+    const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
+    let runningStock = part.stock - totalNetChange;
+
+    const dailyData = entries.map(([date, day]) => {
+      runningStock += day.netChange;
+      return {
+        date,
+        stock: runningStock,
+        inQty: day.inQty,
+        outQty: day.outQty,
+        adjustQty: day.adjustQty,
+      };
+    });
+
+    trendMap[part.id] = dailyData;
+  }
+
+  return { parts, trendMap };
+}
+
 export default async function DashboardPage() {
   const session = await auth();
 
@@ -156,6 +247,8 @@ export default async function DashboardPage() {
   } = await getDashboardData();
 
   const stockTrendData = await getStockTrendData();
+  const { parts: partOptions, trendMap: partTrendMap } =
+    await getPartStockTrendData();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -251,6 +344,19 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
+        {/* Per-Part Stock Trend Chart */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-blue-500" />
+              部品別 在庫推移（過去30日間）
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PartStockChart parts={partOptions} trendMap={partTrendMap} />
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Low Stock Alert */}
           <Card>
@@ -285,10 +391,10 @@ export default async function DashboardPage() {
                       </div>
                       <span
                         className={`text-sm font-bold ${part.stock <= 10
-                            ? "text-red-600"
-                            : part.stock <= 50
-                              ? "text-orange-500"
-                              : "text-yellow-600"
+                          ? "text-red-600"
+                          : part.stock <= 50
+                            ? "text-orange-500"
+                            : "text-yellow-600"
                           }`}
                       >
                         {part.stock}個
@@ -328,8 +434,8 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${tx.type === "IN"
-                              ? "bg-green-100 text-green-800"
-                              : tx.type === "OUT"
+                            ? "bg-green-100 text-green-800"
+                            : tx.type === "OUT"
                               ? "bg-red-100 text-red-800"
                               : "bg-blue-100 text-blue-800"
                             }`}

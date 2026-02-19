@@ -12,7 +12,7 @@ interface InventoryItem {
   lastTransaction: {
     type: "IN" | "OUT" | "ADJUST";
     quantity: number;
-    createdAt: Date;
+    createdAtFormatted: string;
   } | null;
 }
 
@@ -67,17 +67,16 @@ export function InventoryList({ items }: { items: InventoryItem[] }) {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
                 <span
-                  className={`text-sm font-bold ${
-                    item.stock <= 0
-                      ? "text-red-600"
-                      : item.stock <= 10
+                  className={`text-sm font-bold ${item.stock <= 0
+                    ? "text-red-600"
+                    : item.stock <= 10
                       ? "text-red-500"
                       : item.stock <= 50
-                      ? "text-orange-500"
-                      : item.stock <= 100
-                      ? "text-yellow-600"
-                      : "text-gray-900"
-                  }`}
+                        ? "text-orange-500"
+                        : item.stock <= 100
+                          ? "text-yellow-600"
+                          : "text-gray-900"
+                    }`}
                 >
                   {item.stock.toLocaleString()}
                 </span>
@@ -92,13 +91,12 @@ export function InventoryList({ items }: { items: InventoryItem[] }) {
                 {item.lastTransaction ? (
                   <div className="flex items-center gap-2">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        item.lastTransaction.type === "IN"
-                          ? "bg-green-100 text-green-800"
-                          : item.lastTransaction.type === "OUT"
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${item.lastTransaction.type === "IN"
+                        ? "bg-green-100 text-green-800"
+                        : item.lastTransaction.type === "OUT"
                           ? "bg-red-100 text-red-800"
                           : "bg-blue-100 text-blue-800"
-                      }`}
+                        }`}
                     >
                       {item.lastTransaction.type === "IN" ? "入庫" : item.lastTransaction.type === "OUT" ? "出庫" : "調整"}
                     </span>
@@ -106,7 +104,7 @@ export function InventoryList({ items }: { items: InventoryItem[] }) {
                       ×{item.lastTransaction.quantity}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {new Date(item.lastTransaction.createdAt).toLocaleDateString("ja-JP")}
+                      {item.lastTransaction.createdAtFormatted}
                     </span>
                   </div>
                 ) : (

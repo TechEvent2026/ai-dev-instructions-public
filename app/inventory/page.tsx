@@ -85,10 +85,11 @@ async function getInventoryData(
       stockValue: part.price * part.stock,
       lastTransaction: lastTransaction
         ? {
-            type: lastTransaction.type as "IN" | "OUT" | "ADJUST",
-            quantity: lastTransaction.quantity,
-            createdAt: lastTransaction.createdAt,
-          }
+          type: lastTransaction.type as "IN" | "OUT" | "ADJUST",
+          quantity: lastTransaction.quantity,
+          createdAt: lastTransaction.createdAt,
+          createdAtFormatted: lastTransaction.createdAt.toLocaleDateString("ja-JP"),
+        }
         : null,
     };
   });

@@ -78,29 +78,27 @@ export function AdjustForm({ part }: AdjustFormProps) {
 
               {diff !== null && (
                 <div
-                  className={`rounded-md border p-3 ${
-                    diff > 0
+                  className={`rounded-md border p-3 ${diff > 0
                       ? "border-green-200 bg-green-50"
                       : diff < 0
-                      ? "border-red-200 bg-red-50"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
+                        ? "border-red-200 bg-red-50"
+                        : "border-gray-200 bg-gray-50"
+                    }`}
                 >
                   <p className="text-sm text-gray-600">差分プレビュー</p>
                   <p
-                    className={`text-lg font-bold ${
-                      diff > 0
+                    className={`text-lg font-bold ${diff > 0
                         ? "text-green-700"
                         : diff < 0
-                        ? "text-red-700"
-                        : "text-gray-500"
-                    }`}
+                          ? "text-red-700"
+                          : "text-gray-500"
+                      }`}
                   >
                     {diff > 0
                       ? `+${diff}（増加）`
                       : diff < 0
-                      ? `${diff}（減少）`
-                      : "差分なし"}
+                        ? `${diff}（減少）`
+                        : "差分なし"}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {part.stock.toLocaleString()} → {parsedActual.toLocaleString()}

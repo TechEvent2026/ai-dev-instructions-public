@@ -70,6 +70,11 @@ export default async function OrdersPage({
     prisma.order.count({ where }),
   ]);
 
+  const formattedOrders = orders.map((o) => ({
+    ...o,
+    createdAtFormatted: o.createdAt.toLocaleDateString("ja-JP"),
+  }));
+
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const paginationParams: Record<string, string> = {};
@@ -118,7 +123,7 @@ export default async function OrdersPage({
 
         <OrdersList
           key={`${currentPage}-${q}-${sort}-${order}-${filter}`}
-          initialOrders={orders}
+          initialOrders={formattedOrders}
           currentUserId={session.user.id}
         />
 

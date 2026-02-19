@@ -98,7 +98,7 @@ async function main() {
 
   console.log('Parts created:', { part1, part2, additionalCount: additionalParts.length })
 
-  // 入出庫サンプルデータ
+  // 入出庫サンプルデータ（日付なし — 当日扱い）
   const sampleTransactions = [
     { partCode: 'PART-001', type: 'IN', quantity: 500, note: '初期入庫' },
     { partCode: 'PART-002', type: 'IN', quantity: 300, note: '初期入庫' },
@@ -122,7 +122,100 @@ async function main() {
     }
   }
 
-  console.log('Stock transactions created:', sampleTransactions.length)
+  // 過去30日間にわたる入出庫データ（部品別在庫推移グラフ用）
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
+
+  const trendTransactions: Array<{
+    partCode: string; type: string; quantity: number; note: string; daysAgo: number
+  }> = [
+      // PART-001 ボルト M6x20: 定期的な入出庫
+      { partCode: 'PART-001', type: 'IN', quantity: 200, note: '定期入庫', daysAgo: 28 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 80, note: '製造ライン出庫', daysAgo: 26 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 60, note: '組立工程出庫', daysAgo: 24 },
+      { partCode: 'PART-001', type: 'IN', quantity: 300, note: '追加発注入庫', daysAgo: 21 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 120, note: '大口出庫', daysAgo: 18 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 45, note: '製造ライン出庫', daysAgo: 15 },
+      { partCode: 'PART-001', type: 'IN', quantity: 150, note: '補充入庫', daysAgo: 12 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 90, note: '組立工程出庫', daysAgo: 9 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 35, note: 'メンテナンス出庫', daysAgo: 6 },
+      { partCode: 'PART-001', type: 'IN', quantity: 250, note: '定期入庫', daysAgo: 3 },
+      { partCode: 'PART-001', type: 'OUT', quantity: 70, note: '製造ライン出庫', daysAgo: 1 },
+
+      // PART-002 ナット M6: 出庫が多い
+      { partCode: 'PART-002', type: 'OUT', quantity: 100, note: '組立工程出庫', daysAgo: 27 },
+      { partCode: 'PART-002', type: 'OUT', quantity: 150, note: '製造ライン出庫', daysAgo: 23 },
+      { partCode: 'PART-002', type: 'IN', quantity: 500, note: '大量入庫', daysAgo: 20 },
+      { partCode: 'PART-002', type: 'OUT', quantity: 80, note: '組立出庫', daysAgo: 17 },
+      { partCode: 'PART-002', type: 'OUT', quantity: 200, note: '大口出庫', daysAgo: 13 },
+      { partCode: 'PART-002', type: 'IN', quantity: 300, note: '補充入庫', daysAgo: 10 },
+      { partCode: 'PART-002', type: 'OUT', quantity: 120, note: '製造出庫', daysAgo: 7 },
+      { partCode: 'PART-002', type: 'OUT', quantity: 60, note: '組立出庫', daysAgo: 4 },
+      { partCode: 'PART-002', type: 'IN', quantity: 200, note: '定期入庫', daysAgo: 2 },
+
+      // PART-005 ボルト M8x30: 不定期な動き
+      { partCode: 'PART-005', type: 'IN', quantity: 100, note: '初回入庫', daysAgo: 25 },
+      { partCode: 'PART-005', type: 'OUT', quantity: 30, note: '試作出庫', daysAgo: 22 },
+      { partCode: 'PART-005', type: 'OUT', quantity: 50, note: '製造出庫', daysAgo: 16 },
+      { partCode: 'PART-005', type: 'IN', quantity: 200, note: '大量入庫', daysAgo: 11 },
+      { partCode: 'PART-005', type: 'OUT', quantity: 40, note: 'メンテナンス出庫', daysAgo: 8 },
+      { partCode: 'PART-005', type: 'OUT', quantity: 25, note: '組立出庫', daysAgo: 5 },
+      { partCode: 'PART-005', type: 'IN', quantity: 80, note: '補充入庫', daysAgo: 2 },
+
+      // PART-010 ベアリング 6201: 少量で高価
+      { partCode: 'PART-010', type: 'IN', quantity: 20, note: '定期入庫', daysAgo: 29 },
+      { partCode: 'PART-010', type: 'OUT', quantity: 5, note: '組立出庫', daysAgo: 25 },
+      { partCode: 'PART-010', type: 'OUT', quantity: 8, note: '製造ライン出庫', daysAgo: 20 },
+      { partCode: 'PART-010', type: 'IN', quantity: 15, note: '追加入庫', daysAgo: 14 },
+      { partCode: 'PART-010', type: 'OUT', quantity: 3, note: 'メンテナンス出庫', daysAgo: 10 },
+      { partCode: 'PART-010', type: 'OUT', quantity: 6, note: '組立出庫', daysAgo: 5 },
+      { partCode: 'PART-010', type: 'IN', quantity: 10, note: '補充入庫', daysAgo: 1 },
+
+      // PART-018 ステッピングモーター: 少数精密部品
+      { partCode: 'PART-018', type: 'IN', quantity: 10, note: '入庫', daysAgo: 28 },
+      { partCode: 'PART-018', type: 'OUT', quantity: 2, note: '試作出庫', daysAgo: 24 },
+      { partCode: 'PART-018', type: 'OUT', quantity: 3, note: '製造出庫', daysAgo: 19 },
+      { partCode: 'PART-018', type: 'IN', quantity: 5, note: '追加入庫', daysAgo: 14 },
+      { partCode: 'PART-018', type: 'OUT', quantity: 4, note: '組立出庫', daysAgo: 8 },
+      { partCode: 'PART-018', type: 'IN', quantity: 8, note: '定期入庫', daysAgo: 3 },
+
+      // PART-009 Oリング: 消耗品パターン
+      { partCode: 'PART-009', type: 'OUT', quantity: 50, note: 'メンテナンス出庫', daysAgo: 27 },
+      { partCode: 'PART-009', type: 'OUT', quantity: 30, note: '定期交換出庫', daysAgo: 22 },
+      { partCode: 'PART-009', type: 'IN', quantity: 200, note: '大量入庫', daysAgo: 18 },
+      { partCode: 'PART-009', type: 'OUT', quantity: 40, note: 'メンテナンス出庫', daysAgo: 14 },
+      { partCode: 'PART-009', type: 'OUT', quantity: 25, note: '定期交換出庫', daysAgo: 9 },
+      { partCode: 'PART-009', type: 'OUT', quantity: 35, note: 'ライン交換出庫', daysAgo: 4 },
+      { partCode: 'PART-009', type: 'IN', quantity: 150, note: '補充入庫', daysAgo: 1 },
+
+      // PART-013 アルミフレーム 2020: 大物部品
+      { partCode: 'PART-013', type: 'IN', quantity: 50, note: '入庫', daysAgo: 26 },
+      { partCode: 'PART-013', type: 'OUT', quantity: 20, note: '組立出庫', daysAgo: 21 },
+      { partCode: 'PART-013', type: 'OUT', quantity: 15, note: '製造出庫', daysAgo: 15 },
+      { partCode: 'PART-013', type: 'IN', quantity: 30, note: '追加入庫', daysAgo: 10 },
+      { partCode: 'PART-013', type: 'OUT', quantity: 10, note: '試作出庫', daysAgo: 6 },
+      { partCode: 'PART-013', type: 'OUT', quantity: 8, note: '組立出庫', daysAgo: 2 },
+    ]
+
+  const userIds = [user.id, manager.id, generalUser.id]
+  let txCount = 0
+  for (const tx of trendTransactions) {
+    const part = await prisma.part.findUnique({ where: { code: tx.partCode } })
+    if (part) {
+      await prisma.stockTransaction.create({
+        data: {
+          partId: part.id,
+          userId: userIds[txCount % userIds.length],
+          type: tx.type,
+          quantity: tx.quantity,
+          note: tx.note,
+          createdAt: daysAgo(tx.daysAgo),
+        },
+      })
+      txCount++
+    }
+  }
+
+  console.log('Stock transactions created:', sampleTransactions.length + txCount, `(基本: ${sampleTransactions.length}, 推移用: ${txCount})`)
 
   // 発注サンプルデータ
   const part1Ref = await prisma.part.findUnique({ where: { code: 'PART-001' } })

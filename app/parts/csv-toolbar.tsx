@@ -169,11 +169,10 @@ export function CsvToolbar() {
 
             {result && (
               <div
-                className={`mt-3 rounded-md border p-3 ${
-                  result.errors.length > 0
+                className={`mt-3 rounded-md border p-3 ${result.errors.length > 0
                     ? "border-orange-200 bg-orange-50"
                     : "border-green-200 bg-green-50"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {result.errors.length > 0 ? (
