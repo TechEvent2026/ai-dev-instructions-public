@@ -11,16 +11,17 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  password      String?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String             @id @default(cuid())
+  name              String?
+  email             String?            @unique
+  emailVerified     DateTime?
+  password          String?
+  image             String?
+  accounts          Account[]
+  sessions          Session[]
+  stockTransactions StockTransaction[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model Account {
@@ -59,12 +60,25 @@ model VerificationToken {
 }
 
 model Part {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  name        String
-  description String?
-  price       Float
-  stock       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String             @id @default(cuid())
+  code              String             @unique
+  name              String
+  description       String?
+  price             Float
+  stock             Int                @default(0)
+  stockTransactions StockTransaction[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model StockTransaction {
+  id        String   @id @default(cuid())
+  partId    String
+  userId    String
+  type      String   // "IN" or "OUT"
+  quantity  Int
+  note      String?
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
