@@ -15,14 +15,15 @@ async function getPart(id: string) {
   return part;
 }
 
-export default async function EditPartPage({ params }: { params: { id: string } }) {
+export default async function EditPartPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session) {
     redirect("/login");
   }
 
-  const part = await getPart(params.id);
+  const { id } = await params;
+  const part = await getPart(id);
 
   return (
     <div className="min-h-screen bg-gray-50">
