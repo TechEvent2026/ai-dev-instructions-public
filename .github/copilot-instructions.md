@@ -2,7 +2,7 @@
 
 - **Next.js 16** (App Router)
 - **TypeScript**
-- **Prisma ORM 7** + **SQLite**
+- **Prisma ORM** + **SQLite**
 - **shadcn/ui** + **Tailwind CSS**
 - **Auth.js** (NextAuth v5)
 - **Zod**
