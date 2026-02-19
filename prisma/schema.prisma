@@ -75,7 +75,7 @@ model StockTransaction {
   id        String   @id @default(cuid())
   partId    String
   userId    String
-  type      String   // "IN" or "OUT"
+  type      String // "IN" or "OUT"
   quantity  Int
   note      String?
   part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)

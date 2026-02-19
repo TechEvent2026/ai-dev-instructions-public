@@ -177,13 +177,12 @@ export default async function DashboardPage() {
                         <span className="text-sm font-medium">{part.name}</span>
                       </div>
                       <span
-                        className={`text-sm font-bold ${
-                          part.stock <= 10
+                        className={`text-sm font-bold ${part.stock <= 10
                             ? "text-red-600"
                             : part.stock <= 50
-                            ? "text-orange-500"
-                            : "text-yellow-600"
-                        }`}
+                              ? "text-orange-500"
+                              : "text-yellow-600"
+                          }`}
                       >
                         {part.stock}個
                       </span>
@@ -221,11 +220,10 @@ export default async function DashboardPage() {
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            tx.type === "IN"
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${tx.type === "IN"
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
-                          }`}
+                            }`}
                         >
                           {tx.type === "IN" ? "入庫" : "出庫"}
                         </span>

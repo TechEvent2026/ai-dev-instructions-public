@@ -76,11 +76,10 @@ export function StockList({
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    tx.type === "IN"
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tx.type === "IN"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                  }`}
+                    }`}
                 >
                   {tx.type === "IN" ? "入庫" : "出庫"}
                 </span>
