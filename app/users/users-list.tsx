@@ -6,11 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { deleteUser } from "./actions";
+import { ROLE_LABELS } from "@/lib/roles";
 
 interface User {
   id: string;
   name: string | null;
   email: string | null;
+  role: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +60,9 @@ export function UsersList({ initialUsers }: { initialUsers: User[] }) {
               メールアドレス
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ロール
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               登録日
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -73,6 +78,17 @@ export function UsersList({ initialUsers }: { initialUsers: User[] }) {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {user.email || "-"}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  user.role === "admin"
+                    ? "bg-red-100 text-red-800"
+                    : user.role === "manager"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-gray-100 text-gray-800"
+                }`}>
+                  {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] || user.role}
+                </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {new Date(user.createdAt).toLocaleDateString("ja-JP")}

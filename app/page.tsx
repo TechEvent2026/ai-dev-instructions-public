@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
+import { StockTrendChart, type StockChartDailyData } from "@/components/stock-trend-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,8 @@ import {
   Boxes,
   DollarSign,
   Activity,
+  BarChart3,
+  ShoppingCart,
 } from "lucide-react";
 
 async function getDashboardData() {
@@ -26,6 +29,7 @@ async function getDashboardData() {
     todayTransactions,
     lowStockParts,
     recentTransactions,
+    pendingOrdersCount,
   ] = await Promise.all([
     prisma.part.count(),
     prisma.part.aggregate({ _sum: { stock: true } }),
@@ -46,6 +50,7 @@ async function getDashboardData() {
         user: { select: { name: true, email: true } },
       },
     }),
+    prisma.order.count({ where: { status: "PENDING" } }),
   ]);
 
   const totalStock = totalStockAgg._sum.stock ?? 0;
@@ -61,7 +66,76 @@ async function getDashboardData() {
     todayTransactions,
     lowStockParts,
     recentTransactions,
+    pendingOrdersCount,
   };
+}
+
+async function getStockTrendData(): Promise<StockChartDailyData[]> {
+  // Get transactions from the past 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+  const transactions = await prisma.stockTransaction.findMany({
+    where: { createdAt: { gte: thirtyDaysAgo } },
+    orderBy: { createdAt: "asc" },
+    select: { type: true, quantity: true, createdAt: true },
+  });
+
+  // Current total stock
+  const currentStockAgg = await prisma.part.aggregate({ _sum: { stock: true } });
+  const currentTotal = currentStockAgg._sum.stock ?? 0;
+
+  // Build date map for daily aggregation
+  const dailyMap = new Map<string, { inQty: number; outQty: number; adjustQty: number; netChange: number }>();
+
+  // Initialize all 30 days
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(thirtyDaysAgo);
+    d.setDate(d.getDate() + i);
+    const key = `${d.getMonth() + 1}/${d.getDate()}`;
+    dailyMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
+  }
+
+  // Aggregate transactions by day
+  for (const tx of transactions) {
+    const d = new Date(tx.createdAt);
+    const key = `${d.getMonth() + 1}/${d.getDate()}`;
+    const day = dailyMap.get(key);
+    if (!day) continue;
+
+    if (tx.type === "IN") {
+      day.inQty += tx.quantity;
+      day.netChange += tx.quantity;
+    } else if (tx.type === "OUT") {
+      day.outQty += tx.quantity;
+      day.netChange -= tx.quantity;
+    } else if (tx.type === "ADJUST") {
+      day.adjustQty += tx.quantity;
+      // ADJUST sets stock directly; the stored quantity is the adjustment delta
+    }
+  }
+
+  // Calculate cumulative total stock backwards from current
+  const entries = Array.from(dailyMap.entries());
+  // Sum all net changes in the 30-day window
+  const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
+  // Stock at the start of the window
+  let runningTotal = currentTotal - totalNetChange;
+
+  const result: StockChartDailyData[] = [];
+  for (const [date, day] of entries) {
+    runningTotal += day.netChange;
+    result.push({
+      date,
+      inQty: day.inQty,
+      outQty: day.outQty,
+      adjustQty: day.adjustQty,
+      totalStock: runningTotal,
+    });
+  }
+
+  return result;
 }
 
 export default async function DashboardPage() {
@@ -78,7 +152,10 @@ export default async function DashboardPage() {
     todayTransactions,
     lowStockParts,
     recentTransactions,
+    pendingOrdersCount,
   } = await getDashboardData();
+
+  const stockTrendData = await getStockTrendData();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -90,7 +167,7 @@ export default async function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">
@@ -142,7 +219,37 @@ export default async function DashboardPage() {
               <p className="text-3xl font-bold">{todayTransactions}</p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-500">
+                承認待ち発注
+              </CardTitle>
+              <ShoppingCart className="h-5 w-5 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{pendingOrdersCount}</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Stock Trend Chart */}
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-indigo-500" />
+              在庫推移（過去30日間）
+            </CardTitle>
+            <Link href="/stock">
+              <Button variant="ghost" size="sm">
+                入出庫履歴
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <StockTrendChart data={stockTrendData} />
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Low Stock Alert */}
@@ -222,10 +329,12 @@ export default async function DashboardPage() {
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${tx.type === "IN"
                               ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              : tx.type === "OUT"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-blue-100 text-blue-800"
                             }`}
                         >
-                          {tx.type === "IN" ? "入庫" : "出庫"}
+                          {tx.type === "IN" ? "入庫" : tx.type === "OUT" ? "出庫" : "調整"}
                         </span>
                         <div>
                           <span className="text-sm font-medium">
@@ -253,7 +362,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Link href="/parts/new">
             <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
               <CardContent className="flex items-center gap-3 py-4">
@@ -275,6 +384,14 @@ export default async function DashboardPage() {
               <CardContent className="flex items-center gap-3 py-4">
                 <Activity className="h-6 w-6 text-purple-500" />
                 <span className="font-medium">ユーザーを追加する</span>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/orders/new">
+            <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
+              <CardContent className="flex items-center gap-3 py-4">
+                <ShoppingCart className="h-6 w-6 text-orange-500" />
+                <span className="font-medium">発注を作成する</span>
               </CardContent>
             </Card>
           </Link>

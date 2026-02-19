@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Package, ArrowLeftRight, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Package, ArrowLeftRight, Users, ClipboardList, ShoppingCart } from "lucide-react";
 import { signOut } from "@/lib/auth";
 
-type ActivePage = "dashboard" | "parts" | "stock" | "users";
+type ActivePage = "dashboard" | "parts" | "inventory" | "stock" | "orders" | "users";
 
 interface AppHeaderProps {
   title: string;
@@ -14,7 +14,9 @@ interface AppHeaderProps {
 const navItems: { page: ActivePage; href: string; label: string; icon: React.ReactNode }[] = [
   { page: "dashboard", href: "/", label: "ダッシュボード", icon: <LayoutDashboard className="mr-1.5 h-4 w-4" /> },
   { page: "parts", href: "/parts", label: "部品マスタ", icon: <Package className="mr-1.5 h-4 w-4" /> },
+  { page: "inventory", href: "/inventory", label: "在庫一覧", icon: <ClipboardList className="mr-1.5 h-4 w-4" /> },
   { page: "stock", href: "/stock", label: "入出庫", icon: <ArrowLeftRight className="mr-1.5 h-4 w-4" /> },
+  { page: "orders", href: "/orders", label: "発注管理", icon: <ShoppingCart className="mr-1.5 h-4 w-4" /> },
   { page: "users", href: "/users", label: "ユーザー管理", icon: <Users className="mr-1.5 h-4 w-4" /> },
 ];
 

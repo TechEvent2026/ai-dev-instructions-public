@@ -8,15 +8,38 @@ async function main() {
 
   const user = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
-    update: {},
+    update: { role: 'admin' },
     create: {
       email: 'admin@example.com',
       name: '管理者',
       password: hashedPassword,
+      role: 'admin',
     },
   })
 
-  console.log('User created:', user)
+  const manager = await prisma.user.upsert({
+    where: { email: 'manager@example.com' },
+    update: { role: 'manager' },
+    create: {
+      email: 'manager@example.com',
+      name: '承認者',
+      password: hashedPassword,
+      role: 'manager',
+    },
+  })
+
+  const generalUser = await prisma.user.upsert({
+    where: { email: 'user@example.com' },
+    update: {},
+    create: {
+      email: 'user@example.com',
+      name: '一般ユーザー',
+      password: hashedPassword,
+      role: 'user',
+    },
+  })
+
+  console.log('Users created:', { admin: user.email, manager: manager.email, user: generalUser.email })
 
   const part1 = await prisma.part.upsert({
     where: { code: 'PART-001' },
@@ -100,6 +123,102 @@ async function main() {
   }
 
   console.log('Stock transactions created:', sampleTransactions.length)
+
+  // 発注サンプルデータ
+  const part1Ref = await prisma.part.findUnique({ where: { code: 'PART-001' } })
+  const part5Ref = await prisma.part.findUnique({ where: { code: 'PART-005' } })
+  const part10Ref = await prisma.part.findUnique({ where: { code: 'PART-010' } })
+  const part18Ref = await prisma.part.findUnique({ where: { code: 'PART-018' } })
+
+  if (part1Ref && part5Ref && part10Ref && part18Ref) {
+    // 下書き発注
+    await prisma.order.create({
+      data: {
+        orderNumber: 'ORD-001',
+        status: 'DRAFT',
+        totalAmount: 5000,
+        requestedById: generalUser.id,
+        items: {
+          create: [
+            { partId: part1Ref.id, quantity: 100, unitPrice: 50, subtotal: 5000 },
+          ],
+        },
+      },
+    })
+
+    // 承認待ち発注
+    await prisma.order.create({
+      data: {
+        orderNumber: 'ORD-002',
+        status: 'PENDING',
+        totalAmount: 9400,
+        requestedById: generalUser.id,
+        items: {
+          create: [
+            { partId: part5Ref.id, quantity: 50, unitPrice: 80, subtotal: 4000 },
+            { partId: part10Ref.id, quantity: 12, unitPrice: 450, subtotal: 5400 },
+          ],
+        },
+      },
+    })
+
+    // 承認済み発注
+    await prisma.order.create({
+      data: {
+        orderNumber: 'ORD-003',
+        status: 'APPROVED',
+        totalAmount: 14000,
+        requestedById: generalUser.id,
+        approvedById: manager.id,
+        approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        items: {
+          create: [
+            { partId: part18Ref.id, quantity: 5, unitPrice: 2800, subtotal: 14000 },
+          ],
+        },
+      },
+    })
+
+    // 発注済み
+    await prisma.order.create({
+      data: {
+        orderNumber: 'ORD-004',
+        status: 'ORDERED',
+        totalAmount: 6800,
+        requestedById: manager.id,
+        approvedById: user.id,
+        approvedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        orderedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        items: {
+          create: [
+            { partId: part10Ref.id, quantity: 10, unitPrice: 450, subtotal: 4500 },
+            { partId: part1Ref.id, quantity: 46, unitPrice: 50, subtotal: 2300 },
+          ],
+        },
+      },
+    })
+
+    // 入荷済み
+    await prisma.order.create({
+      data: {
+        orderNumber: 'ORD-005',
+        status: 'RECEIVED',
+        totalAmount: 5600,
+        requestedById: generalUser.id,
+        approvedById: manager.id,
+        approvedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
+        orderedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        receivedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        items: {
+          create: [
+            { partId: part18Ref.id, quantity: 2, unitPrice: 2800, subtotal: 5600 },
+          ],
+        },
+      },
+    })
+
+    console.log('Sample orders created: 5')
+  }
 }
 
 main()

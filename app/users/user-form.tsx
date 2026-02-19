@@ -4,14 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createUser, updateUser } from "./actions";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { ROLES, ROLE_LABELS } from "@/lib/roles";
 
 interface User {
   id: string;
   name: string | null;
   email: string | null;
+  role: string;
 }
 
 interface UserFormProps {
@@ -81,6 +90,22 @@ export function UserForm({ user }: UserFormProps) {
                   : "6文字以上で入力"
               }
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">ロール *</Label>
+            <Select name="role" defaultValue={user?.role || ROLES.USER}>
+              <SelectTrigger>
+                <SelectValue placeholder="ロールを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

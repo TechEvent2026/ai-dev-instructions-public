@@ -6,9 +6,16 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   basePath: string;
+  extraParams?: Record<string, string>;
 }
 
-export function Pagination({ currentPage, totalPages, basePath }: PaginationProps) {
+function buildHref(page: number, basePath: string, extraParams?: Record<string, string>) {
+  const params = new URLSearchParams(extraParams);
+  params.set("page", String(page));
+  return `${basePath}?${params.toString()}`;
+}
+
+export function Pagination({ currentPage, totalPages, basePath, extraParams }: PaginationProps) {
   if (totalPages <= 1) {
     return null;
   }
@@ -40,7 +47,7 @@ export function Pagination({ currentPage, totalPages, basePath }: PaginationProp
   return (
     <div className="mt-6 flex items-center justify-center gap-1">
       <Link
-        href={currentPage > 1 ? `${basePath}?page=${currentPage - 1}` : "#"}
+        href={currentPage > 1 ? buildHref(currentPage - 1, basePath, extraParams) : "#"}
         aria-disabled={currentPage <= 1}
       >
         <Button variant="outline" size="sm" disabled={currentPage <= 1}>
@@ -54,7 +61,7 @@ export function Pagination({ currentPage, totalPages, basePath }: PaginationProp
             ...
           </span>
         ) : (
-          <Link key={page} href={`${basePath}?page=${page}`}>
+          <Link key={page} href={buildHref(page, basePath, extraParams)}>
             <Button
               variant={page === currentPage ? "default" : "outline"}
               size="sm"
@@ -69,7 +76,7 @@ export function Pagination({ currentPage, totalPages, basePath }: PaginationProp
       <Link
         href={
           currentPage < totalPages
-            ? `${basePath}?page=${currentPage + 1}`
+            ? buildHref(currentPage + 1, basePath, extraParams)
             : "#"
         }
         aria-disabled={currentPage >= totalPages}

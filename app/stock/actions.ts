@@ -68,5 +68,72 @@ export async function createStockTransaction(formData: FormData) {
 
   revalidatePath("/stock");
   revalidatePath("/parts");
+  revalidatePath("/inventory");
+  revalidatePath("/");
   redirect("/stock");
+}
+
+const adjustStockSchema = z.object({
+  partId: z.string().min(1, "部品IDが必要です"),
+  actualStock: z.number().int().min(0, "実棚数は0以上である必要があります"),
+  note: z.string().optional(),
+});
+
+export async function adjustStock(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("認証が必要です");
+  }
+
+  const data = {
+    partId: formData.get("partId") as string,
+    actualStock: parseInt(formData.get("actualStock") as string, 10),
+    note: (formData.get("note") as string) || undefined,
+  };
+
+  const validated = adjustStockSchema.parse(data);
+
+  await prisma.$transaction(async (tx) => {
+    const part = await tx.part.findUnique({
+      where: { id: validated.partId },
+    });
+
+    if (!part) {
+      throw new Error("指定された部品が見つかりません");
+    }
+
+    const diff = validated.actualStock - part.stock;
+
+    if (diff === 0) {
+      throw new Error("在庫数に変更がありません");
+    }
+
+    const autoNote = `システム在庫: ${part.stock} → 実棚数: ${validated.actualStock}（差分: ${diff >= 0 ? "+" : ""}${diff}）`;
+    const fullNote = validated.note
+      ? `${autoNote} / ${validated.note}`
+      : autoNote;
+
+    await tx.stockTransaction.create({
+      data: {
+        partId: validated.partId,
+        userId: session.user!.id!,
+        type: "ADJUST",
+        quantity: Math.abs(diff),
+        note: fullNote,
+      },
+    });
+
+    await tx.part.update({
+      where: { id: validated.partId },
+      data: {
+        stock: validated.actualStock,
+      },
+    });
+  });
+
+  revalidatePath("/stock");
+  revalidatePath("/parts");
+  revalidatePath("/inventory");
+  revalidatePath("/");
+  redirect("/inventory");
 }

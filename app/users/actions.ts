@@ -10,6 +10,7 @@ const createUserSchema = z.object({
   name: z.string().min(1, "名前は必須です"),
   email: z.string().email("有効なメールアドレスを入力してください"),
   password: z.string().min(6, "パスワードは6文字以上である必要があります"),
+  role: z.enum(["admin", "manager", "user"]).default("user"),
 });
 
 const updateUserSchema = z.object({
@@ -25,6 +26,7 @@ const updateUserSchema = z.object({
         .min(6, "パスワードは6文字以上である必要があります")
         .optional()
     ),
+  role: z.enum(["admin", "manager", "user"]).default("user"),
 });
 
 export async function createUser(formData: FormData) {
@@ -32,6 +34,7 @@ export async function createUser(formData: FormData) {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
+    role: (formData.get("role") as string) || "user",
   };
 
   const validated = createUserSchema.parse(data);
@@ -51,6 +54,7 @@ export async function createUser(formData: FormData) {
       name: validated.name,
       email: validated.email,
       password: hashedPassword,
+      role: validated.role,
     },
   });
 
@@ -63,6 +67,7 @@ export async function updateUser(id: string, formData: FormData) {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
+    role: (formData.get("role") as string) || "user",
   };
 
   const validated = updateUserSchema.parse(data);
@@ -75,9 +80,10 @@ export async function updateUser(id: string, formData: FormData) {
     throw new Error("このメールアドレスは既に他のユーザーに使用されています");
   }
 
-  const updateData: { name: string; email: string; password?: string } = {
+  const updateData: { name: string; email: string; password?: string; role: string } = {
     name: validated.name,
     email: validated.email,
+    role: validated.role,
   };
 
   if (validated.password) {

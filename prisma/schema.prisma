@@ -17,9 +17,12 @@ model User {
   emailVerified     DateTime?
   password          String?
   image             String?
+  role              String             @default("user") // "admin", "manager", "user"
   accounts          Account[]
   sessions          Session[]
   stockTransactions StockTransaction[]
+  requestedOrders   Order[]            @relation("RequestedOrders")
+  approvedOrders    Order[]            @relation("ApprovedOrders")
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 }
@@ -67,6 +70,7 @@ model Part {
   price             Float
   stock             Int                @default(0)
   stockTransactions StockTransaction[]
+  orderItems        OrderItem[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 }
@@ -75,10 +79,40 @@ model StockTransaction {
   id        String   @id @default(cuid())
   partId    String
   userId    String
-  type      String // "IN" or "OUT"
+  type      String // "IN", "OUT", or "ADJUST"
   quantity  Int
   note      String?
   part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  status          String      @default("DRAFT") // "DRAFT", "PENDING", "APPROVED", "REJECTED", "ORDERED", "RECEIVED"
+  note            String?
+  totalAmount     Float       @default(0)
+  requestedById   String
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  orderedAt       DateTime?
+  receivedAt      DateTime?
+  requestedBy     User        @relation("RequestedOrders", fields: [requestedById], references: [id], onDelete: Cascade)
+  approvedBy      User?       @relation("ApprovedOrders", fields: [approvedById], references: [id])
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  partId    String
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  part      Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
 }

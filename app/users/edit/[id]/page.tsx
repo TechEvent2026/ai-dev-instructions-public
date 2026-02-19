@@ -10,6 +10,7 @@ async function getUser(id: string) {
       id: true,
       name: true,
       email: true,
+      role: true,
     },
   });
 
