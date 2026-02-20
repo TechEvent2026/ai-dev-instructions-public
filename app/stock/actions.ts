@@ -32,12 +32,17 @@ export async function createStockTransaction(formData: FormData) {
   const validated = stockTransactionSchema.parse(data);
 
   await prisma.$transaction(async (tx) => {
-    const part = await tx.part.findUnique({
-      where: { id: validated.partId },
-    });
+    const [part, user] = await Promise.all([
+      tx.part.findUnique({ where: { id: validated.partId } }),
+      tx.user.findUnique({ where: { id: userId } }),
+    ]);
 
     if (!part) {
       throw new Error("指定された部品が見つかりません");
+    }
+
+    if (!user) {
+      throw new Error("セッションが無効です。再ログインしてください。");
     }
 
     if (validated.type === "OUT" && part.stock < validated.quantity) {
@@ -96,12 +101,17 @@ export async function adjustStock(formData: FormData) {
   const validated = adjustStockSchema.parse(data);
 
   await prisma.$transaction(async (tx) => {
-    const part = await tx.part.findUnique({
-      where: { id: validated.partId },
-    });
+    const [part, user] = await Promise.all([
+      tx.part.findUnique({ where: { id: validated.partId } }),
+      tx.user.findUnique({ where: { id: userId } }),
+    ]);
 
     if (!part) {
       throw new Error("指定された部品が見つかりません");
+    }
+
+    if (!user) {
+      throw new Error("セッションが無効です。再ログインしてください。");
     }
 
     const diff = validated.actualStock - part.stock;

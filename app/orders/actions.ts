@@ -47,9 +47,13 @@ export async function createOrder(data: {
   submit?: boolean;
 }) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     throw new Error("認証が必要です");
   }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("セッションが無効です。再ログインしてください。");
 
   const validated = createOrderSchema.parse(data);
 
@@ -67,7 +71,7 @@ export async function createOrder(data: {
       status: data.submit ? "PENDING" : "DRAFT",
       note: validated.note || null,
       totalAmount,
-      requestedById: session.user.id,
+      requestedById: userId,
       items: {
         create: items,
       },
@@ -143,20 +147,25 @@ export async function submitOrder(orderId: string) {
 
 export async function approveOrder(orderId: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("認証が必要です");
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("認証が必要です");
   if (!canApproveOrders(session.user.role ?? "user")) {
     throw new Error("承認権限がありません");
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const [order, user] = await Promise.all([
+    prisma.order.findUnique({ where: { id: orderId } }),
+    prisma.user.findUnique({ where: { id: userId } }),
+  ]);
   if (!order) throw new Error("発注が見つかりません");
+  if (!user) throw new Error("セッションが無効です。再ログインしてください。");
   if (order.status !== "PENDING") throw new Error("承認待ちの発注のみ承認できます");
 
   await prisma.order.update({
     where: { id: orderId },
     data: {
       status: "APPROVED",
-      approvedById: session.user.id,
+      approvedById: userId,
       approvedAt: new Date(),
     },
   });
@@ -167,13 +176,18 @@ export async function approveOrder(orderId: string) {
 
 export async function rejectOrder(orderId: string, reason: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("認証が必要です");
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("認証が必要です");
   if (!canApproveOrders(session.user.role ?? "user")) {
     throw new Error("承認権限がありません");
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const [order, user] = await Promise.all([
+    prisma.order.findUnique({ where: { id: orderId } }),
+    prisma.user.findUnique({ where: { id: userId } }),
+  ]);
   if (!order) throw new Error("発注が見つかりません");
+  if (!user) throw new Error("セッションが無効です。再ログインしてください。");
   if (order.status !== "PENDING") throw new Error("承認待ちの発注のみ却下できます");
 
   if (!reason.trim()) throw new Error("却下理由を入力してください");
@@ -182,7 +196,7 @@ export async function rejectOrder(orderId: string, reason: string) {
     where: { id: orderId },
     data: {
       status: "REJECTED",
-      approvedById: session.user.id,
+      approvedById: userId,
       approvedAt: new Date(),
       rejectionReason: reason,
     },
@@ -214,15 +228,17 @@ export async function markOrdered(orderId: string) {
 
 export async function receiveOrder(orderId: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("認証が必要です");
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("認証が必要です");
 
   await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
+    const [order, user] = await Promise.all([
+      tx.order.findUnique({ where: { id: orderId }, include: { items: true } }),
+      tx.user.findUnique({ where: { id: userId } }),
+    ]);
 
     if (!order) throw new Error("発注が見つかりません");
+    if (!user) throw new Error("セッションが無効です。再ログインしてください。");
     if (order.status !== "ORDERED") throw new Error("発注済みの発注のみ納品処理できます");
 
     // Update order status
@@ -239,7 +255,7 @@ export async function receiveOrder(orderId: string) {
       await tx.stockTransaction.create({
         data: {
           partId: item.partId,
-          userId: session.user!.id!,
+          userId,
           type: "IN",
           quantity: item.quantity,
           note: `発注 ${order.orderNumber} による入庫`,
