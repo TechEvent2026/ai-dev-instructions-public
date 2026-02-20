@@ -17,7 +17,7 @@ export async function createPart(formData: FormData) {
   const data = {
     code: formData.get("code") as string,
     name: formData.get("name") as string,
-    description: formData.get("description") as string || null,
+    description: formData.get("description") as string || undefined,
     price: parseFloat(formData.get("price") as string),
     stock: parseInt(formData.get("stock") as string, 10),
   };
@@ -42,7 +42,7 @@ export async function updatePart(id: string, formData: FormData) {
   const data = {
     code: formData.get("code") as string,
     name: formData.get("name") as string,
-    description: formData.get("description") as string || null,
+    description: formData.get("description") as string || undefined,
     price: parseFloat(formData.get("price") as string),
     stock: parseInt(formData.get("stock") as string, 10),
   };

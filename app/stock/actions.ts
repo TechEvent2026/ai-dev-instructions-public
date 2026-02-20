@@ -17,7 +17,8 @@ const stockTransactionSchema = z.object({
 
 export async function createStockTransaction(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     throw new Error("認証が必要です");
   }
 
@@ -48,7 +49,7 @@ export async function createStockTransaction(formData: FormData) {
     await tx.stockTransaction.create({
       data: {
         partId: validated.partId,
-        userId: session.user!.id!,
+        userId,
         type: validated.type,
         quantity: validated.quantity,
         note: validated.note || null,
@@ -81,7 +82,8 @@ const adjustStockSchema = z.object({
 
 export async function adjustStock(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     throw new Error("認証が必要です");
   }
 
@@ -116,7 +118,7 @@ export async function adjustStock(formData: FormData) {
     await tx.stockTransaction.create({
       data: {
         partId: validated.partId,
-        userId: session.user!.id!,
+        userId,
         type: "ADJUST",
         quantity: Math.abs(diff),
         note: fullNote,
