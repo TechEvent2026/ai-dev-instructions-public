@@ -39,3 +39,19 @@ prisma/        # schema.prisma とマイグレーション
 - `DATABASE_URL` は `.env` ファイルで `file:./dev.db` のように指定する。
 - マイグレーションは `pnpm prisma migrate dev` で実行する。
 - スキーマ変更後は `pnpm prisma generate` で Prisma Client を再生成する。
+
+# Next.js 設定
+
+- `next.config.ts` で Server Actions の `allowedOrigins` に `*.app.github.dev` を含める（GitHub Codespaces 対応）：
+  ```ts
+  const nextConfig: NextConfig = {
+    experimental: {
+      serverActions: {
+        allowedOrigins: [
+          "localhost:3000",
+          "*.app.github.dev",
+        ],
+      },
+    },
+  };
+  ```
