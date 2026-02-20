@@ -12,6 +12,9 @@
 
 dev.db
 
+# prisma generated client
+/generated
+
 # testing
 /coverage
 
