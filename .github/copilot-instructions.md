@@ -1,4 +1,4 @@
-# 技術スタック
+# Tech Stack
 
 - **Next.js 16** (App Router)
 - **TypeScript**
@@ -8,41 +8,28 @@
 - **Zod**
 - **pnpm**
 
-# プロジェクト構成
+# Project Structure
 
 ```
-app/           # App Router のページとレイアウト
-components/    # 再利用可能な UI コンポーネント（shadcn/ui コンポーネント）
-lib/           # ユーティリティ、Prisma クライアントなど
-prisma/        # schema.prisma とマイグレーション
+app/           # App Router pages and layouts
+components/    # Reusable UI components (shadcn/ui components here)
+lib/           # Utilities, Prisma client, etc.
+prisma/        # schema.prisma and migrations
 ```
 
-# 規約
+# Conventions
 
-- デフォルトで Server Components を使用する。`"use client"` はイベントハンドラ、フック、ブラウザ API が必要な場合のみ付与する。
-- データベースへのアクセスは Server Components または Server Actions 内でのみ行う。クライアントコンポーネントから Prisma を呼び出さない。
-- Prisma Client はシングルトンパターン（`lib/prisma.ts`）で使用し、開発時のホットリロードで複数インスタンスが生成されるのを防ぐ。
-- Server Actions で処理する前に、すべてのユーザー入力を Zod スキーマでバリデーションする。
-- カスタム UI よりも shadcn/ui コンポーネントを優先する。カスタマイズは Tailwind CSS で行う。
-- Auth.js の設定は `lib/auth.ts` に記述する。セッション・ユーザーの永続化には Prisma Adapter を使用する。
-- パッケージ管理コマンドにはすべて `pnpm` を使用する。
+- Use Server Components by default. Add `"use client"` only when needed (event handlers, hooks, browser APIs).
+- Access the database in Server Components or Server Actions only. Never call Prisma from client components.
+- Use a singleton pattern for Prisma Client (`lib/prisma.ts`) to prevent multiple instances during dev hot reload.
+- Validate all user input with Zod schemas before processing in Server Actions.
+- Prefer shadcn/ui components over custom UI. Customize via Tailwind CSS.
+- Configure Auth.js in `lib/auth.ts`. Use Prisma Adapter for session/user persistence.
+- Use `pnpm` for all package management commands.
 
-# データベース (Prisma + SQLite)
+# Next.js Config
 
-- データベースには **SQLite** を使用する。`schema.prisma` の `datasource` は以下のように設定する：
-  ```prisma
-  datasource db {
-    provider = "sqlite"
-    url      = env("DATABASE_URL")
-  }
-  ```
-- `DATABASE_URL` は `.env` ファイルで `file:./dev.db` のように指定する。
-- マイグレーションは `pnpm prisma migrate dev` で実行する。
-- スキーマ変更後は `pnpm prisma generate` で Prisma Client を再生成する。
-
-# Next.js 設定
-
-- `next.config.ts` で Server Actions の `allowedOrigins` に `*.app.github.dev` を含める（GitHub Codespaces 対応）：
+- Include `*.app.github.dev` in `allowedOrigins` for Server Actions in `next.config.ts` (for GitHub Codespaces):
   ```ts
   const nextConfig: NextConfig = {
     experimental: {
