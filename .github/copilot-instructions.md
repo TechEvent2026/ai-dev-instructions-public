@@ -214,13 +214,17 @@ For development, create test users with hashed passwords.
 
 Add to `package.json`:
 ```json
-{ "prisma": { "seed": "npx tsx prisma/seed.ts" } }
+{ "prisma": { "seed": "npx tsx --tsconfig tsconfig.json prisma/seed.ts" } }
 ```
 
-Seed script pattern (`prisma/seed.ts`):
+Seed script (`prisma/seed.ts`) — use relative imports (`@/` alias does not resolve outside Next.js):
 ```typescript
-import { prisma } from "@/lib/prisma";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaClient } from "../generated/prisma";
 import bcrypt from "bcryptjs";
+
+const adapter = new PrismaBetterSqlite3({ url: "file:./prisma/dev.db" });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const hash = await bcrypt.hash("password123", 10);
