@@ -27,18 +27,7 @@ prisma/        # schema.prisma and migrations
 - Configure Auth.js in `lib/auth.ts`. Use Prisma Adapter for session/user persistence.
 - Use `pnpm` for all package management commands.
 
-# Next.js Config
+# Development Environment
 
-- Include `*.app.github.dev` in `allowedOrigins` for Server Actions in `next.config.ts` (for GitHub Codespaces):
-  ```ts
-  const nextConfig: NextConfig = {
-    experimental: {
-      serverActions: {
-        allowedOrigins: [
-          "localhost:3000",
-          "*.app.github.dev",
-        ],
-      },
-    },
-  };
-  ```
+- This project is developed in **GitHub Codespaces**. The dev server is accessed via `https://<codespace-name>-<port>.app.github.dev` (not `localhost`).
+- All origin-based configurations (CORS, allowed origins, CSRF, Auth.js callbacks, etc.) must include `*.app.github.dev` in addition to `localhost`.
