@@ -27,9 +27,14 @@ prisma/        # schema.prisma and migrations
 - Configure Auth.js in `lib/auth.ts`. Use Prisma Adapter for session/user persistence.
 - Use `pnpm` for all package management commands.
 
+# Development Environment
+
+- This project is developed in **GitHub Codespaces**. The dev server is accessed via `https://<codespace-name>-<port>.app.github.dev` (not `localhost`).
+- All origin-based configurations (CORS, allowed origins, CSRF, Auth.js callbacks, etc.) must include `*.app.github.dev` in addition to `localhost`.
+
 # Next.js Config
 
-- Include `*.app.github.dev` in `allowedOrigins` for Server Actions in `next.config.ts` (for GitHub Codespaces):
+- `next.config.ts` must include `*.app.github.dev` in `allowedOrigins` so Server Actions work in Codespaces:
   ```ts
   const nextConfig: NextConfig = {
     experimental: {
@@ -42,3 +47,4 @@ prisma/        # schema.prisma and migrations
     },
   };
   ```
+- When configuring Auth.js, ensure the `AUTH_URL` / `NEXTAUTH_URL` environment variable is set to the Codespaces URL, or use `AUTH_TRUST_HOST=true`.
