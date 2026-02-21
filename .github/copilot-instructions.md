@@ -54,6 +54,7 @@ When initializing the project from scratch, follow this exact order:
 
 - **Prisma 7 requires a driver adapter.** Do NOT use `new PrismaClient()` without an adapter — it will fail at runtime.
 - **SQLite does NOT support `@db.Text` or any `@db.*` native type annotations.** Remove them from any schema examples.
+- **Prisma 7 では `datasource` ブロックに `url` を書かない。** URL は `prisma.config.ts` で指定する（下記 Prisma Config セクション参照）。
 - Generator must output to a local directory:
   ```prisma
   generator client {
@@ -67,7 +68,6 @@ When initializing the project from scratch, follow this exact order:
 ```prisma
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
