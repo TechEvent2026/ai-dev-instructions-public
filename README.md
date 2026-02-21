@@ -29,7 +29,7 @@
 
 - Next.js 16（App Router）
 - TypeScript
-- Prisma ORM 7 + SQLite
+- Prisma ORM 6 + SQLite
 - shadcn/ui + Tailwind CSS
 - Auth.js（NextAuth v5）
 - Zod
