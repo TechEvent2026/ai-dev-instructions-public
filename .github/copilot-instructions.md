@@ -133,9 +133,9 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 ## Critical Rules
 
-- **`session: { strategy: "jwt" }` は必須。** Credentials provider + Prisma Adapter 使用時、これがないと Auth.js がデータベースセッションにフォールバックし、ログインが無言で失敗する。
-- **`getToken()` を直接使わない。** Auth.js v5 では Cookie 名が `authjs.session-token` に変更されたが、`getToken()` はデフォルトで `next-auth.session-token` を探すため、認証済みでも未認証と判定されログインループが発生する。代わりに `auth()` ラッパーを使う。
-- **`proxy.ts` でログインページと API auth ルートを除外する。** 除外しないとログインページ自体が認証を要求しリダイレクトループになる。
+- **`session: { strategy: "jwt" }` is required.** When using Credentials provider + Prisma Adapter, Auth.js defaults to database sessions without this, and login will silently fail.
+- **Do NOT use `getToken()` directly.** Auth.js v5 changed the cookie name to `authjs.session-token`, but `getToken()` looks for `next-auth.session-token` by default, causing a login redirect loop even for authenticated users. Use the `auth()` wrapper instead.
+- **Exclude the login page and API auth routes in `proxy.ts`.** Otherwise the login page itself requires authentication, creating a redirect loop.
 
 ## File Structure
 
@@ -194,7 +194,7 @@ export const { GET, POST } = handlers;
 
 ## Route Protection (`proxy.ts`)
 
-Next.js 16 では `middleware.ts` の代わりに `proxy.ts` を使用。**`getToken()` ではなく `auth()` ラッパーを使うこと。**
+Next.js 16 uses `proxy.ts` instead of `middleware.ts`. **Use the `auth()` wrapper, NOT `getToken()`.**
 
 ```typescript
 import { auth } from "@/lib/auth";
