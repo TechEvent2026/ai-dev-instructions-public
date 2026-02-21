@@ -2,7 +2,7 @@
 
 - **Next.js 16** (App Router)
 - **TypeScript**
-- **Prisma ORM 7** + **SQLite** (driver adapter required)
+- **Prisma ORM 6** + **SQLite**
 - **shadcn/ui** + **Tailwind CSS**
 - **Auth.js** (NextAuth v5)
 - **Zod**
@@ -15,7 +15,6 @@ app/           # App Router pages and layouts
 components/    # Reusable UI components (shadcn/ui components here)
 lib/           # Utilities, Prisma client, auth config, etc.
 prisma/        # schema.prisma, migrations, seed.ts
-generated/     # Prisma generated client (auto-generated, gitignored)
 ```
 
 # Setup Workflow
@@ -27,15 +26,14 @@ When initializing the project from scratch, follow this exact order:
 3. `pnpm dlx shadcn@latest init -y` (package name is `shadcn`, not `shadcn-ui`)
 4. Install dependencies:
    ```
-   pnpm add @prisma/adapter-better-sqlite3 next-auth@beta @auth/prisma-adapter bcryptjs zod
-   pnpm add -D prisma @types/bcryptjs tsx
+   pnpm add prisma@6 @prisma/client@6 next-auth@beta @auth/prisma-adapter bcryptjs zod
+   pnpm add -D @types/bcryptjs tsx
    ```
 5. `npx prisma init --datasource-provider sqlite`
-6. Create `prisma.config.ts` (see Prisma Config section below)
-7. Create schema (see Prisma section below), then `npx prisma migrate dev --name init`
-8. Create seed script, then `npx prisma db seed`
-9. Generate AUTH_SECRET: `npx auth secret` (writes to `.env.local`)
-10. Set up `next.config.ts` with `allowedOrigins` (see Development Environment section)
+6. Create schema (see Prisma section below), then `npx prisma migrate dev --name init`
+7. Create seed script, then `npx prisma db seed`
+8. Generate AUTH_SECRET: `npx auth secret` (writes to `.env.local`)
+9. Set up `next.config.ts` with `allowedOrigins` (see Development Environment section)
 
 # Conventions
 
@@ -48,31 +46,23 @@ When initializing the project from scratch, follow this exact order:
 - Use `pnpm` for all package management commands.
 - Adding shadcn components: `pnpm dlx shadcn@latest add <component-name>`
 
-# Prisma 7 + SQLite
+# Prisma 6 + SQLite
 
 ## Critical Rules
 
-- **Prisma 7 requires a driver adapter.** Do NOT use `new PrismaClient()` without an adapter — it will fail at runtime.
+- **Use Prisma 6 (`prisma@6`, `@prisma/client@6`).** Do NOT use Prisma 7.
 - **SQLite does NOT support `@db.Text` or any `@db.*` native type annotations.** Remove them from any schema examples.
-- **Prisma 7 では `datasource` ブロックに `url` を書かない。** URL は `prisma.config.ts` で指定する（下記 Prisma Config セクション参照）。
-- Generator must output to a local directory:
-  ```prisma
-  generator client {
-    provider = "prisma-client"
-    output   = "../generated/prisma"
-  }
-  ```
 
 ## Schema (SQLite + Auth.js)
 
 ```prisma
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 model User {
@@ -128,30 +118,28 @@ Add application-specific models (e.g., Part, Category) below the Auth.js models.
 ## Prisma Client Singleton (`lib/prisma.ts`)
 
 ```typescript
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-});
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 ```
 
 # Auth.js v5
 
-## Critical Rule
+## Critical Rules
 
-**When using Credentials provider WITH Prisma Adapter, you MUST set `session: { strategy: "jwt" }`.** Without this, Auth.js defaults to database sessions which are incompatible with Credentials provider, and login will silently fail.
+- **`session: { strategy: "jwt" }` は必須。** Credentials provider + Prisma Adapter 使用時、これがないと Auth.js がデータベースセッションにフォールバックし、ログインが無言で失敗する。
+- **`getToken()` を直接使わない。** Auth.js v5 では Cookie 名が `authjs.session-token` に変更されたが、`getToken()` はデフォルトで `next-auth.session-token` を探すため、認証済みでも未認証と判定されログインループが発生する。代わりに `auth()` ラッパーを使う。
+- **`proxy.ts` でログインページと API auth ルートを除外する。** 除外しないとログインページ自体が認証を要求しリダイレクトループになる。
 
 ## File Structure
 
 - `lib/auth.ts` — main config, exports `{ auth, handlers, signIn, signOut }`
 - `app/api/auth/[...nextauth]/route.ts` — must export `{ GET, POST }` from handlers
+- `proxy.ts` (Next.js 16+) — route protection using `auth()` wrapper
 
 ## Minimal `lib/auth.ts`
 
@@ -166,6 +154,7 @@ import { prisma } from "@/lib/prisma";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },  // REQUIRED with Credentials + Adapter
+  pages: { signIn: "/login" },   // custom login page path
   providers: [
     Credentials({
       credentials: {
@@ -201,6 +190,25 @@ import { handlers } from "@/lib/auth";
 export const { GET, POST } = handlers;
 ```
 
+## Route Protection (`proxy.ts`)
+
+Next.js 16 では `middleware.ts` の代わりに `proxy.ts` を使用。**`getToken()` ではなく `auth()` ラッパーを使うこと。**
+
+```typescript
+import { auth } from "@/lib/auth";
+
+export const proxy = auth((req) => {
+  if (!req.auth && req.nextUrl.pathname !== "/login") {
+    const newUrl = new URL("/login", req.nextUrl.origin);
+    return Response.redirect(newUrl);
+  }
+});
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
+```
+
 ## Required `.env`
 
 ```
@@ -209,38 +217,21 @@ AUTH_SECRET="<generated by: npx auth secret>"
 AUTH_TRUST_HOST=true
 ```
 
-# Prisma Config (`prisma.config.ts`)
-
-Prisma 7 uses `prisma.config.ts` for CLI configuration (seed, datasource, etc.):
-
-```typescript
-import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
-
-export default defineConfig({
-  schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-    seed: "tsx prisma/seed.ts",
-  },
-  datasource: {
-    url: env("DATABASE_URL"),
-  },
-});
-```
-
 # Seed Data
 
 For development, create test users with hashed passwords.
 
-Seed script (`prisma/seed.ts`) — use relative imports (`@/` alias does not resolve outside Next.js):
+Add to `package.json`:
+```json
+{ "prisma": { "seed": "npx tsx prisma/seed.ts" } }
+```
+
+Seed script (`prisma/seed.ts`):
 ```typescript
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./prisma/dev.db" });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   const hash = await bcrypt.hash("password123", 10);
