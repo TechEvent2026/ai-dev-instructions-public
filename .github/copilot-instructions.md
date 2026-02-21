@@ -30,10 +30,11 @@ When initializing the project from scratch, follow this exact order:
    pnpm add -D @types/bcryptjs tsx
    ```
 5. `npx prisma init --datasource-provider sqlite`
-6. Create schema (see Prisma section below), then `npx prisma migrate dev --name init`
-7. Create seed script, then `npx prisma db seed`
-8. Generate AUTH_SECRET: `npx auth secret` (writes to `.env.local`)
-9. Set up `next.config.ts` with `allowedOrigins` (see Development Environment section)
+6. Add `DATABASE_URL="file:./prisma/dev.db"` to `.env` (created by prisma init)
+7. Create schema (see Prisma section below), then `npx prisma migrate dev --name init`
+8. Create seed script, add `prisma.seed` to `package.json`, then `npx prisma db seed`
+9. Generate AUTH_SECRET: `npx auth secret` (writes to `.env.local`)
+10. Set up `next.config.ts` with `allowedOrigins` (see Development Environment section)
 
 # Conventions
 
