@@ -137,7 +137,7 @@ export function OrderForm({ parts, order }: OrderFormProps) {
               >
                 <div className="col-span-5">
                   {index === 0 && (
-                    <Label className="text-xs text-gray-500 mb-1 block">部品</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">部品</Label>
                   )}
                   <Select
                     value={item.partId}
@@ -157,7 +157,7 @@ export function OrderForm({ parts, order }: OrderFormProps) {
                 </div>
                 <div className="col-span-2">
                   {index === 0 && (
-                    <Label className="text-xs text-gray-500 mb-1 block">数量</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">数量</Label>
                   )}
                   <Input
                     type="number"
@@ -170,7 +170,7 @@ export function OrderForm({ parts, order }: OrderFormProps) {
                 </div>
                 <div className="col-span-2">
                   {index === 0 && (
-                    <Label className="text-xs text-gray-500 mb-1 block">単価</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">単価</Label>
                   )}
                   <Input
                     type="number"
@@ -183,7 +183,7 @@ export function OrderForm({ parts, order }: OrderFormProps) {
                 </div>
                 <div className="col-span-2 text-right">
                   {index === 0 && (
-                    <Label className="text-xs text-gray-500 mb-1 block">小計</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">小計</Label>
                   )}
                   <p className="text-sm font-medium py-2">
                     ¥{(item.quantity * item.unitPrice).toLocaleString()}
@@ -208,8 +208,8 @@ export function OrderForm({ parts, order }: OrderFormProps) {
 
           {/* Total */}
           <div className="mt-4 flex justify-end">
-            <div className="rounded-md bg-gray-50 px-6 py-3 text-right">
-              <span className="text-sm text-gray-500 mr-4">合計金額</span>
+            <div className="rounded-md bg-muted px-6 py-3 text-right">
+              <span className="text-sm text-muted-foreground mr-4">合計金額</span>
               <span className="text-xl font-bold">
                 ¥{totalAmount.toLocaleString()}
               </span>

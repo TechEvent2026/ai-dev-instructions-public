@@ -60,7 +60,7 @@ export function SearchFilterBar({
     <div className="mb-6 flex flex-col sm:flex-row gap-3">
       {/* Search */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="コード・名前で検索..."
           defaultValue={q}
@@ -118,7 +118,7 @@ export function SearchFilterBar({
 
       {isPending && (
         <div className="flex items-center">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-muted-foreground" />
         </div>
       )}
     </div>

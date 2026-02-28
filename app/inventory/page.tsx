@@ -145,7 +145,7 @@ export default async function InventoryPage({
   if (filter) paginationParams.filter = filter;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AppHeader
         title="在庫一覧"
         userEmail={session.user?.email}
@@ -155,16 +155,16 @@ export default async function InventoryPage({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary */}
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow px-4 py-3">
-            <p className="text-sm text-gray-500">登録部品数</p>
+          <div className="bg-card rounded-lg shadow px-4 py-3">
+            <p className="text-sm text-muted-foreground">登録部品数</p>
             <p className="text-2xl font-bold">{totalPartsCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow px-4 py-3">
-            <p className="text-sm text-gray-500">総在庫数</p>
+          <div className="bg-card rounded-lg shadow px-4 py-3">
+            <p className="text-sm text-muted-foreground">総在庫数</p>
             <p className="text-2xl font-bold">{totalStock.toLocaleString()}</p>
           </div>
-          <div className="bg-white rounded-lg shadow px-4 py-3">
-            <p className="text-sm text-gray-500">在庫総額</p>
+          <div className="bg-card rounded-lg shadow px-4 py-3">
+            <p className="text-sm text-muted-foreground">在庫総額</p>
             <p className="text-2xl font-bold">
               ¥{totalStockValue.toLocaleString()}
             </p>
@@ -172,9 +172,9 @@ export default async function InventoryPage({
         </div>
 
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-foreground">
             在庫一覧
-            <span className="ml-2 text-sm font-normal text-gray-500">
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
               （{q || filter ? `${totalCount}件 該当` : `全${totalCount}件`}）
             </span>
           </h2>

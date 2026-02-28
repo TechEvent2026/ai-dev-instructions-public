@@ -40,7 +40,7 @@ export function UsersList({ initialUsers }: { initialUsers: User[] }) {
   if (users.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <p className="text-gray-500 mb-4">登録されているユーザーがいません</p>
+        <p className="text-muted-foreground mb-4">登録されているユーザーがいません</p>
         <Link href="/users/new">
           <Button>最初のユーザーを登録</Button>
         </Link>
@@ -49,34 +49,34 @@ export function UsersList({ initialUsers }: { initialUsers: User[] }) {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-card shadow rounded-lg overflow-hidden">
+      <table className="min-w-full divide-y divide-border">
+        <thead className="bg-muted">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               名前
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               メールアドレス
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               ロール
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               登録日
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
               操作
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-card divide-y divide-border">
           {users.map((user) => (
             <tr key={user.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                 {user.name || "-"}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                 {user.email || "-"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -84,12 +84,12 @@ export function UsersList({ initialUsers }: { initialUsers: User[] }) {
                   ? "bg-red-100 text-red-800"
                   : user.role === "manager"
                     ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-100 text-gray-800"
+                    : "bg-muted text-foreground"
                   }`}>
                   {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] || user.role}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                 {user.createdAtFormatted}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

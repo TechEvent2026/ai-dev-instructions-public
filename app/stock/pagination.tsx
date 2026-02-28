@@ -57,7 +57,7 @@ export function Pagination({ currentPage, totalPages, basePath, extraParams }: P
 
       {pages.map((page, index) =>
         page === "..." ? (
-          <span key={`ellipsis-${index}`} className="px-2 text-sm text-gray-500">
+          <span key={`ellipsis-${index}`} className="px-2 text-sm text-muted-foreground">
             ...
           </span>
         ) : (

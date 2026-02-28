@@ -84,14 +84,14 @@ export default async function OrdersPage({
   if (filter) paginationParams.filter = filter;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AppHeader title="発注管理" userEmail={session.user?.email} activePage="orders" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-foreground">
             発注一覧
-            <span className="ml-2 text-sm font-normal text-gray-500">
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
               （{q || filter ? `${totalCount}件 該当` : `全${totalCount}件`}）
             </span>
           </h2>

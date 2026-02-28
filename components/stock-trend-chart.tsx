@@ -43,7 +43,7 @@ function CustomTooltip({
   );
 }
 
-export function StockTrendChart({ data }: { data: StockChartDailyData[] }) {
+export function StockTrendChart({ data, periodLabel = "日別" }: { data: StockChartDailyData[]; periodLabel?: string }) {
   return (
     <div className="space-y-6">
       {/* Total stock area chart */}
@@ -85,7 +85,7 @@ export function StockTrendChart({ data }: { data: StockChartDailyData[] }) {
 
       {/* Daily in/out/adjust bar chart */}
       <div>
-        <h4 className="text-sm font-medium text-gray-600 mb-2">日別 入出庫・調整数</h4>
+        <h4 className="text-sm font-medium text-gray-600 mb-2">{periodLabel} 入出庫・調整数</h4>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

@@ -41,18 +41,18 @@ export function AdjustForm({ part }: AdjustFormProps) {
           <CardTitle>在庫調整</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 rounded-md border bg-gray-50 p-4">
+          <div className="mb-6 rounded-md border bg-muted p-4">
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <span className="text-gray-500">部品コード</span>
+                <span className="text-muted-foreground">部品コード</span>
                 <p className="font-mono font-medium">{part.code}</p>
               </div>
               <div>
-                <span className="text-gray-500">部品名</span>
+                <span className="text-muted-foreground">部品名</span>
                 <p className="font-medium">{part.name}</p>
               </div>
               <div className="col-span-2 mt-2">
-                <span className="text-gray-500">システム在庫数</span>
+                <span className="text-muted-foreground">システム在庫数</span>
                 <p className="text-2xl font-bold">{part.stock.toLocaleString()}</p>
               </div>
             </div>
@@ -82,16 +82,16 @@ export function AdjustForm({ part }: AdjustFormProps) {
                       ? "border-green-200 bg-green-50"
                       : diff < 0
                         ? "border-red-200 bg-red-50"
-                        : "border-gray-200 bg-gray-50"
+                        : "border-border bg-muted"
                     }`}
                 >
-                  <p className="text-sm text-gray-600">差分プレビュー</p>
+                  <p className="text-sm text-muted-foreground">差分プレビュー</p>
                   <p
                     className={`text-lg font-bold ${diff > 0
                         ? "text-green-700"
                         : diff < 0
                           ? "text-red-700"
-                          : "text-gray-500"
+                          : "text-muted-foreground"
                       }`}
                   >
                     {diff > 0
@@ -100,7 +100,7 @@ export function AdjustForm({ part }: AdjustFormProps) {
                         ? `${diff}（減少）`
                         : "差分なし"}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {part.stock.toLocaleString()} → {parsedActual.toLocaleString()}
                   </p>
                 </div>

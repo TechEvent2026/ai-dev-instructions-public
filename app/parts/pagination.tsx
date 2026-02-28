@@ -62,7 +62,7 @@ export function Pagination({ currentPage, totalPages, extraParams }: PaginationP
         page === "..." ? (
           <span
             key={`ellipsis-${index}`}
-            className="px-2 text-sm text-gray-500"
+            className="px-2 text-sm text-muted-foreground"
           >
             ...
           </span>

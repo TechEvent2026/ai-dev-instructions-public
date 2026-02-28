@@ -19,7 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
+  DRAFT: "bg-muted text-foreground",
   PENDING: "bg-yellow-100 text-yellow-800",
   APPROVED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
@@ -56,7 +56,7 @@ export default async function OrderDetailPage({
   const userCanApprove = canApproveOrders(session.user.role ?? "user");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AppHeader title="発注管理" userEmail={session.user?.email} activePage="orders" />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -69,7 +69,7 @@ export default async function OrderDetailPage({
               </Button>
             </Link>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-foreground">
                 {order.orderNumber}
               </h2>
               <span
@@ -96,13 +96,13 @@ export default async function OrderDetailPage({
             <CardContent>
               <dl className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <dt className="text-gray-500">依頼者</dt>
+                  <dt className="text-muted-foreground">依頼者</dt>
                   <dd className="font-medium">
                     {order.requestedBy.name ?? order.requestedBy.email}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">作成日</dt>
+                  <dt className="text-muted-foreground">作成日</dt>
                   <dd className="font-medium">
                     {new Date(order.createdAt).toLocaleDateString("ja-JP", {
                       year: "numeric",
@@ -114,7 +114,7 @@ export default async function OrderDetailPage({
                 {order.approvedBy && (
                   <>
                     <div>
-                      <dt className="text-gray-500">
+                      <dt className="text-muted-foreground">
                         {order.status === "REJECTED" ? "却下者" : "承認者"}
                       </dt>
                       <dd className="font-medium">
@@ -122,7 +122,7 @@ export default async function OrderDetailPage({
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-gray-500">
+                      <dt className="text-muted-foreground">
                         {order.status === "REJECTED" ? "却下日" : "承認日"}
                       </dt>
                       <dd className="font-medium">
@@ -138,7 +138,7 @@ export default async function OrderDetailPage({
                 )}
                 {order.orderedAt && (
                   <div>
-                    <dt className="text-gray-500">発注日</dt>
+                    <dt className="text-muted-foreground">発注日</dt>
                     <dd className="font-medium">
                       {new Date(order.orderedAt).toLocaleDateString("ja-JP", {
                         year: "numeric",
@@ -150,7 +150,7 @@ export default async function OrderDetailPage({
                 )}
                 {order.receivedAt && (
                   <div>
-                    <dt className="text-gray-500">納品日</dt>
+                    <dt className="text-muted-foreground">納品日</dt>
                     <dd className="font-medium">
                       {new Date(order.receivedAt).toLocaleDateString("ja-JP", {
                         year: "numeric",
@@ -163,7 +163,7 @@ export default async function OrderDetailPage({
               </dl>
               {order.note && (
                 <div className="mt-4 pt-4 border-t">
-                  <dt className="text-sm text-gray-500 mb-1">備考</dt>
+                  <dt className="text-sm text-muted-foreground mb-1">備考</dt>
                   <dd className="text-sm">{order.note}</dd>
                 </div>
               )}
@@ -187,30 +187,30 @@ export default async function OrderDetailPage({
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-border">
+                  <thead className="bg-muted">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                         部品コード
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                         部品名
                       </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
                         数量
                       </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
                         単価
                       </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                      <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
                         小計
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-border">
                     {order.items.map((item) => (
                       <tr key={item.id}>
-                        <td className="px-4 py-3 text-sm font-mono text-gray-600">
+                        <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
                           {item.part.code}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium">
@@ -229,7 +229,7 @@ export default async function OrderDetailPage({
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-gray-50">
+                    <tr className="bg-muted">
                       <td
                         colSpan={4}
                         className="px-4 py-3 text-sm font-semibold text-right"

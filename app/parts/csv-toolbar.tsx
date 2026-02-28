@@ -54,17 +54,17 @@ export function CsvToolbar() {
             <Download className="mr-1.5 h-4 w-4" />
             エクスポート
           </Button>
-          <div className="absolute right-0 top-full mt-1 z-10 hidden group-hover:block bg-white border rounded-md shadow-lg min-w-[160px]">
+          <div className="absolute right-0 top-full mt-1 z-10 hidden group-hover:block bg-card border rounded-md shadow-lg min-w-[160px]">
             <a
               href="/api/parts/export-excel"
-              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 rounded-t-md"
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-t-md"
             >
               <FileSpreadsheet className="h-4 w-4 text-green-600" />
               Excel (.xlsx)
             </a>
             <a
               href="/api/parts/export"
-              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 rounded-b-md"
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-b-md"
             >
               <FileText className="h-4 w-4 text-blue-600" />
               CSV (.csv)
@@ -129,7 +129,7 @@ export function CsvToolbar() {
                   CSV
                 </Button>
               </div>
-              <div className="text-xs text-gray-500 space-y-1">
+              <div className="text-xs text-muted-foreground space-y-1">
                 <p className="flex items-center gap-1">
                   {importFormat === "excel" ? (
                     <FileSpreadsheet className="h-3 w-3" />
@@ -155,7 +155,7 @@ export function CsvToolbar() {
               <Button type="submit" size="sm" disabled={importing}>
                 {importing ? (
                   <>
-                    <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-border border-t-muted-foreground" />
                     処理中...
                   </>
                 ) : (

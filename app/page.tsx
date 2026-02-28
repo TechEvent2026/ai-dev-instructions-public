@@ -9,6 +9,8 @@ import {
   type PartOption,
   type PartStockTrendMap,
 } from "@/components/part-stock-chart";
+import { PeriodSelector } from "@/components/period-selector";
+import { periodTitle, periodGranularityLabel, type Period } from "@/lib/period";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,14 +77,43 @@ async function getDashboardData() {
   };
 }
 
-async function getStockTrendData(): Promise<StockChartDailyData[]> {
-  // Get transactions from the past 30 days
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
-  thirtyDaysAgo.setHours(0, 0, 0, 0);
+/** 期間に応じた日数を返す */
+function periodToDays(period: Period): number {
+  switch (period) {
+    case "7d": return 7;
+    case "30d": return 30;
+    case "90d": return 90;
+    case "1y": return 365;
+    default: return 30;
+  }
+}
+
+/** 年間ビュー用: 日付からその週の月曜日を返す */
+function getWeekMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // 月曜始まり
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function formatDateKey(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+async function getStockTrendData(period: Period): Promise<StockChartDailyData[]> {
+  const days = periodToDays(period);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - (days - 1));
+  startDate.setHours(0, 0, 0, 0);
+
+  if (isNaN(startDate.getTime())) {
+    throw new Error(`Invalid startDate computed for period: ${period}`);
+  }
 
   const transactions = await prisma.stockTransaction.findMany({
-    where: { createdAt: { gte: thirtyDaysAgo } },
+    where: { createdAt: { gte: startDate } },
     orderBy: { createdAt: "asc" },
     select: { type: true, quantity: true, createdAt: true },
   });
@@ -91,21 +122,69 @@ async function getStockTrendData(): Promise<StockChartDailyData[]> {
   const currentStockAgg = await prisma.part.aggregate({ _sum: { stock: true } });
   const currentTotal = currentStockAgg._sum.stock ?? 0;
 
-  // Build date map for daily aggregation
+  if (period === "1y") {
+    // --- 週単位集計 ---
+    const weekMap = new Map<string, { inQty: number; outQty: number; adjustQty: number; netChange: number }>();
+    const weekKeys: string[] = [];
+
+    // 初期化: startDate の週の月曜から今日の週の月曜まで
+    const firstMonday = getWeekMonday(startDate);
+    const lastMonday = getWeekMonday(new Date());
+    const cur = new Date(firstMonday);
+    while (cur <= lastMonday) {
+      const key = formatDateKey(cur);
+      weekMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
+      weekKeys.push(key);
+      cur.setDate(cur.getDate() + 7);
+    }
+
+    // 集計
+    for (const tx of transactions) {
+      const monday = getWeekMonday(new Date(tx.createdAt));
+      const key = formatDateKey(monday);
+      const week = weekMap.get(key);
+      if (!week) continue;
+
+      if (tx.type === "IN") {
+        week.inQty += tx.quantity;
+        week.netChange += tx.quantity;
+      } else if (tx.type === "OUT") {
+        week.outQty += tx.quantity;
+        week.netChange -= tx.quantity;
+      } else if (tx.type === "ADJUST") {
+        week.adjustQty += tx.quantity;
+      }
+    }
+
+    const entries = weekKeys.map((key) => [key, weekMap.get(key)!] as const);
+    const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
+    let runningTotal = currentTotal - totalNetChange;
+
+    return entries.map(([date, week]) => {
+      runningTotal += week.netChange;
+      return {
+        date: `${date}~`,
+        inQty: week.inQty,
+        outQty: week.outQty,
+        adjustQty: week.adjustQty,
+        totalStock: runningTotal,
+      };
+    });
+  }
+
+  // --- 日単位集計 (7d / 30d / 90d) ---
   const dailyMap = new Map<string, { inQty: number; outQty: number; adjustQty: number; netChange: number }>();
 
-  // Initialize all 30 days
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(thirtyDaysAgo);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate);
     d.setDate(d.getDate() + i);
-    const key = `${d.getMonth() + 1}/${d.getDate()}`;
+    const key = formatDateKey(d);
     dailyMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
   }
 
-  // Aggregate transactions by day
   for (const tx of transactions) {
     const d = new Date(tx.createdAt);
-    const key = `${d.getMonth() + 1}/${d.getDate()}`;
+    const key = formatDateKey(d);
     const day = dailyMap.get(key);
     if (!day) continue;
 
@@ -117,41 +196,38 @@ async function getStockTrendData(): Promise<StockChartDailyData[]> {
       day.netChange -= tx.quantity;
     } else if (tx.type === "ADJUST") {
       day.adjustQty += tx.quantity;
-      // ADJUST sets stock directly; the stored quantity is the adjustment delta
     }
   }
 
-  // Calculate cumulative total stock backwards from current
   const entries = Array.from(dailyMap.entries());
-  // Sum all net changes in the 30-day window
   const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
-  // Stock at the start of the window
   let runningTotal = currentTotal - totalNetChange;
 
-  const result: StockChartDailyData[] = [];
-  for (const [date, day] of entries) {
+  return entries.map(([date, day]) => {
     runningTotal += day.netChange;
-    result.push({
+    return {
       date,
       inQty: day.inQty,
       outQty: day.outQty,
       adjustQty: day.adjustQty,
       totalStock: runningTotal,
-    });
-  }
-
-  return result;
+    };
+  });
 }
 
-async function getPartStockTrendData(): Promise<{
+async function getPartStockTrendData(period: Period): Promise<{
   parts: PartOption[];
   trendMap: PartStockTrendMap;
 }> {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
-  thirtyDaysAgo.setHours(0, 0, 0, 0);
+  const days = periodToDays(period);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - (days - 1));
+  startDate.setHours(0, 0, 0, 0);
 
-  // Fetch top 20 parts (by transaction activity) and their transactions
+  if (isNaN(startDate.getTime())) {
+    throw new Error(`Invalid startDate computed for period: ${period}`);
+  }
+
   const partsWithTx = await prisma.part.findMany({
     select: {
       id: true,
@@ -159,7 +235,7 @@ async function getPartStockTrendData(): Promise<{
       name: true,
       stock: true,
       stockTransactions: {
-        where: { createdAt: { gte: thirtyDaysAgo } },
+        where: { createdAt: { gte: startDate } },
         orderBy: { createdAt: "asc" },
         select: { type: true, quantity: true, createdAt: true },
       },
@@ -178,63 +254,122 @@ async function getPartStockTrendData(): Promise<{
   const trendMap: PartStockTrendMap = {};
 
   for (const part of partsWithTx) {
-    // Build daily map
-    const dailyMap = new Map<
-      string,
-      { inQty: number; outQty: number; adjustQty: number; netChange: number }
-    >();
+    if (period === "1y") {
+      // --- 週単位集計 ---
+      const weekMap = new Map<
+        string,
+        { inQty: number; outQty: number; adjustQty: number; netChange: number }
+      >();
+      const weekKeys: string[] = [];
 
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(thirtyDaysAgo);
-      d.setDate(d.getDate() + i);
-      const key = `${d.getMonth() + 1}/${d.getDate()}`;
-      dailyMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
-    }
-
-    for (const tx of part.stockTransactions) {
-      const d = new Date(tx.createdAt);
-      const key = `${d.getMonth() + 1}/${d.getDate()}`;
-      const day = dailyMap.get(key);
-      if (!day) continue;
-
-      if (tx.type === "IN") {
-        day.inQty += tx.quantity;
-        day.netChange += tx.quantity;
-      } else if (tx.type === "OUT") {
-        day.outQty += tx.quantity;
-        day.netChange -= tx.quantity;
-      } else if (tx.type === "ADJUST") {
-        day.adjustQty += tx.quantity;
+      const firstMonday = getWeekMonday(startDate);
+      const lastMonday = getWeekMonday(new Date());
+      const cur = new Date(firstMonday);
+      while (cur <= lastMonday) {
+        const key = formatDateKey(cur);
+        weekMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
+        weekKeys.push(key);
+        cur.setDate(cur.getDate() + 7);
       }
+
+      for (const tx of part.stockTransactions) {
+        const monday = getWeekMonday(new Date(tx.createdAt));
+        const key = formatDateKey(monday);
+        const week = weekMap.get(key);
+        if (!week) continue;
+
+        if (tx.type === "IN") {
+          week.inQty += tx.quantity;
+          week.netChange += tx.quantity;
+        } else if (tx.type === "OUT") {
+          week.outQty += tx.quantity;
+          week.netChange -= tx.quantity;
+        } else if (tx.type === "ADJUST") {
+          week.adjustQty += tx.quantity;
+        }
+      }
+
+      const entries = weekKeys.map((key) => [key, weekMap.get(key)!] as const);
+      const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
+      let runningStock = part.stock - totalNetChange;
+
+      trendMap[part.id] = entries.map(([date, week]) => {
+        runningStock += week.netChange;
+        return {
+          date: `${date}~`,
+          stock: runningStock,
+          inQty: week.inQty,
+          outQty: week.outQty,
+          adjustQty: week.adjustQty,
+        };
+      });
+    } else {
+      // --- 日単位集計 ---
+      const dailyMap = new Map<
+        string,
+        { inQty: number; outQty: number; adjustQty: number; netChange: number }
+      >();
+
+      for (let i = 0; i < days; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const key = formatDateKey(d);
+        dailyMap.set(key, { inQty: 0, outQty: 0, adjustQty: 0, netChange: 0 });
+      }
+
+      for (const tx of part.stockTransactions) {
+        const d = new Date(tx.createdAt);
+        const key = formatDateKey(d);
+        const day = dailyMap.get(key);
+        if (!day) continue;
+
+        if (tx.type === "IN") {
+          day.inQty += tx.quantity;
+          day.netChange += tx.quantity;
+        } else if (tx.type === "OUT") {
+          day.outQty += tx.quantity;
+          day.netChange -= tx.quantity;
+        } else if (tx.type === "ADJUST") {
+          day.adjustQty += tx.quantity;
+        }
+      }
+
+      const entries = Array.from(dailyMap.entries());
+      const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
+      let runningStock = part.stock - totalNetChange;
+
+      trendMap[part.id] = entries.map(([date, day]) => {
+        runningStock += day.netChange;
+        return {
+          date,
+          stock: runningStock,
+          inQty: day.inQty,
+          outQty: day.outQty,
+          adjustQty: day.adjustQty,
+        };
+      });
     }
-
-    const entries = Array.from(dailyMap.entries());
-    const totalNetChange = entries.reduce((sum, [, v]) => sum + v.netChange, 0);
-    let runningStock = part.stock - totalNetChange;
-
-    const dailyData = entries.map(([date, day]) => {
-      runningStock += day.netChange;
-      return {
-        date,
-        stock: runningStock,
-        inQty: day.inQty,
-        outQty: day.outQty,
-        adjustQty: day.adjustQty,
-      };
-    });
-
-    trendMap[part.id] = dailyData;
   }
 
   return { parts, trendMap };
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
   const session = await auth();
 
   if (!session) {
     redirect("/login");
   }
+
+  const { period: rawPeriod } = await searchParams;
+  const validPeriods: Period[] = ["7d", "30d", "90d", "1y"];
+  const period: Period = validPeriods.includes(rawPeriod as Period)
+    ? (rawPeriod as Period)
+    : "30d";
 
   const {
     totalParts,
@@ -246,12 +381,15 @@ export default async function DashboardPage() {
     pendingOrdersCount,
   } = await getDashboardData();
 
-  const stockTrendData = await getStockTrendData();
+  const stockTrendData = await getStockTrendData(period);
   const { parts: partOptions, trendMap: partTrendMap } =
-    await getPartStockTrendData();
+    await getPartStockTrendData(period);
+
+  const granularityLabel = periodGranularityLabel(period);
+  const title = periodTitle(period);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AppHeader
         title="ダッシュボード"
         userEmail={session.user?.email}
@@ -263,7 +401,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 登録部品数
               </CardTitle>
               <Package className="h-5 w-5 text-blue-500" />
@@ -275,7 +413,7 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 総在庫数
               </CardTitle>
               <Boxes className="h-5 w-5 text-green-500" />
@@ -289,7 +427,7 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 在庫総額
               </CardTitle>
               <DollarSign className="h-5 w-5 text-yellow-500" />
@@ -303,7 +441,7 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 本日の入出庫
               </CardTitle>
               <Activity className="h-5 w-5 text-purple-500" />
@@ -315,7 +453,7 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 承認待ち発注
               </CardTitle>
               <ShoppingCart className="h-5 w-5 text-orange-500" />
@@ -331,16 +469,19 @@ export default async function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
-              在庫推移（過去30日間）
+              在庫推移（{title}）
             </CardTitle>
-            <Link href="/stock">
-              <Button variant="ghost" size="sm">
-                入出庫履歴
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <PeriodSelector current={period} />
+              <Link href="/stock">
+                <Button variant="ghost" size="sm">
+                  入出庫履歴
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
-            <StockTrendChart data={stockTrendData} />
+            <StockTrendChart data={stockTrendData} periodLabel={granularityLabel} />
           </CardContent>
         </Card>
 
@@ -349,11 +490,11 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-500" />
-              部品別 在庫推移（過去30日間）
+              部品別 在庫推移（{title}）
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <PartStockChart parts={partOptions} trendMap={partTrendMap} />
+            <PartStockChart parts={partOptions} trendMap={partTrendMap} periodLabel={granularityLabel} />
           </CardContent>
         </Card>
 
@@ -373,7 +514,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               {lowStockParts.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   在庫が少ない部品はありません。
                 </p>
               ) : (
@@ -384,7 +525,7 @@ export default async function DashboardPage() {
                       className="flex items-center justify-between rounded-md border px-3 py-2"
                     >
                       <div>
-                        <span className="text-xs font-mono text-gray-500 mr-2">
+                        <span className="text-xs font-mono text-muted-foreground mr-2">
                           {part.code}
                         </span>
                         <span className="text-sm font-medium">{part.name}</span>
@@ -421,7 +562,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               {recentTransactions.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   入出庫履歴はありません。
                 </p>
               ) : (
@@ -446,16 +587,16 @@ export default async function DashboardPage() {
                           <span className="text-sm font-medium">
                             {tx.part.name}
                           </span>
-                          <span className="ml-2 text-xs text-gray-500">
+                          <span className="ml-2 text-xs text-muted-foreground">
                             ×{tx.quantity}
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           {tx.user.name ?? tx.user.email}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           {new Date(tx.createdAt).toLocaleDateString("ja-JP")}
                         </p>
                       </div>
@@ -470,7 +611,7 @@ export default async function DashboardPage() {
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Link href="/parts/new">
-            <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
+            <Card className="hover:bg-muted transition-colors cursor-pointer">
               <CardContent className="flex items-center gap-3 py-4">
                 <Package className="h-6 w-6 text-blue-500" />
                 <span className="font-medium">部品を登録する</span>
@@ -478,7 +619,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           <Link href="/stock/new">
-            <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
+            <Card className="hover:bg-muted transition-colors cursor-pointer">
               <CardContent className="flex items-center gap-3 py-4">
                 <ArrowLeftRight className="h-6 w-6 text-green-500" />
                 <span className="font-medium">入出庫を登録する</span>
@@ -486,7 +627,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           <Link href="/users/new">
-            <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
+            <Card className="hover:bg-muted transition-colors cursor-pointer">
               <CardContent className="flex items-center gap-3 py-4">
                 <Activity className="h-6 w-6 text-purple-500" />
                 <span className="font-medium">ユーザーを追加する</span>
@@ -494,7 +635,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           <Link href="/orders/new">
-            <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
+            <Card className="hover:bg-muted transition-colors cursor-pointer">
               <CardContent className="flex items-center gap-3 py-4">
                 <ShoppingCart className="h-6 w-6 text-orange-500" />
                 <span className="font-medium">発注を作成する</span>

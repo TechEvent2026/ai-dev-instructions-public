@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { LogOut, LayoutDashboard, Package, ArrowLeftRight, Users, ClipboardList, ShoppingCart } from "lucide-react";
 import { signOut } from "@/lib/auth";
 
@@ -22,12 +23,13 @@ const navItems: { page: ActivePage; href: string; label: string; icon: React.Rea
 
 export function AppHeader({ title, userEmail, activePage }: AppHeaderProps) {
   return (
-    <header className="bg-white shadow">
+    <header className="bg-background shadow border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">{userEmail}</span>
+            <ThemeToggle />
+            <span className="text-sm text-muted-foreground">{userEmail}</span>
             <form
               action={async () => {
                 "use server";

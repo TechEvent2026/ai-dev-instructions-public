@@ -56,9 +56,11 @@ function ChartTooltip({
 export function PartStockChart({
   parts,
   trendMap,
+  periodLabel = "日別",
 }: {
   parts: PartOption[];
   trendMap: PartStockTrendMap;
+  periodLabel?: string;
 }) {
   const [selectedPartId, setSelectedPartId] = useState(parts[0]?.id ?? "");
 
@@ -144,7 +146,7 @@ export function PartStockChart({
           {/* Daily in/out bar chart */}
           <div>
             <h4 className="text-sm font-medium text-gray-600 mb-2">
-              日別 入出庫・調整
+              {periodLabel} 入出庫・調整
             </h4>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart

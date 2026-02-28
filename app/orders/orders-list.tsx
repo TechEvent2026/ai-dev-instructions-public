@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
+  DRAFT: "bg-muted text-foreground",
   PENDING: "bg-yellow-100 text-yellow-800",
   APPROVED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
@@ -60,7 +60,7 @@ export function OrdersList({
   if (orders.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <p className="text-gray-500 mb-4">発注依頼はありません</p>
+        <p className="text-muted-foreground mb-4">発注依頼はありません</p>
         <Link href="/orders/new">
           <Button>最初の発注を作成</Button>
         </Link>
@@ -69,34 +69,34 @@ export function OrdersList({
   }
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-card shadow rounded-lg overflow-hidden">
+      <table className="min-w-full divide-y divide-border">
+        <thead className="bg-muted">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               発注番号
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               ステータス
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               依頼者
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
               合計金額
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               作成日
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
               操作
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-card divide-y divide-border">
           {orders.map((order) => (
-            <tr key={order.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900">
+            <tr key={order.id} className="hover:bg-muted">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-foreground">
                 {order.orderNumber}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -106,13 +106,13 @@ export function OrdersList({
                   {STATUS_LABELS[order.status] ?? order.status}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                 {order.requestedBy.name ?? order.requestedBy.email ?? "-"}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-foreground">
                 ¥{order.totalAmount.toLocaleString()}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                 {order.createdAtFormatted}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

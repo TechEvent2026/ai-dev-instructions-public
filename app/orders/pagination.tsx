@@ -43,7 +43,7 @@ export function Pagination({ currentPage, totalPages, extraParams }: PaginationP
       </Link>
       {pages.map((page, index) =>
         page === "..." ? (
-          <span key={`ellipsis-${index}`} className="px-2 text-sm text-gray-500">...</span>
+          <span key={`ellipsis-${index}`} className="px-2 text-sm text-muted-foreground">...</span>
         ) : (
           <Link key={page} href={buildHref(page, extraParams)}>
             <Button variant={page === currentPage ? "default" : "outline"} size="sm" className="min-w-[36px]">
