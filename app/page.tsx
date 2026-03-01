@@ -11,11 +11,30 @@ import {
 } from "@/components/part-stock-chart";
 import { PeriodSelector } from "@/components/period-selector";
 import { periodTitle, periodGranularityLabel, type Period } from "@/lib/period";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Package,
   ArrowLeftRight,
+  ArrowRight,
   AlertTriangle,
   TrendingUp,
   Boxes,
@@ -23,6 +42,8 @@ import {
   Activity,
   BarChart3,
   ShoppingCart,
+  Plus,
+  Users,
 } from "lucide-react";
 
 async function getDashboardData() {
@@ -389,261 +410,375 @@ export default async function DashboardPage({
   const title = periodTitle(period);
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader
-        title="ダッシュボード"
-        userEmail={session.user?.email}
-        activePage="dashboard"
-      />
+    <TooltipProvider>
+      <div className="min-h-screen bg-muted/40">
+        <AppHeader
+          title="ダッシュボード"
+          userEmail={session.user?.email}
+          activePage="dashboard"
+        />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-bl-full" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  登録部品数
+                </CardTitle>
+                <div className="rounded-lg bg-blue-500/10 p-2">
+                  <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold tracking-tight">{totalParts}</p>
+                <p className="text-xs text-muted-foreground mt-1">マスタ登録済み</p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-bl-full" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  総在庫数
+                </CardTitle>
+                <div className="rounded-lg bg-emerald-500/10 p-2">
+                  <Boxes className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold tracking-tight">
+                  {totalStock.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">全部品の合計</p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-bl-full" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  在庫総額
+                </CardTitle>
+                <div className="rounded-lg bg-amber-500/10 p-2">
+                  <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold tracking-tight">
+                  ¥{totalStockValue.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">評価額</p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-violet-500/10 rounded-bl-full" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  本日の入出庫
+                </CardTitle>
+                <div className="rounded-lg bg-violet-500/10 p-2">
+                  <Activity className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold tracking-tight">{todayTransactions}</p>
+                <p className="text-xs text-muted-foreground mt-1">本日の取引件数</p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-bl-full" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  承認待ち発注
+                </CardTitle>
+                <div className="rounded-lg bg-orange-500/10 p-2">
+                  <ShoppingCart className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <p className="text-3xl font-bold tracking-tight">{pendingOrdersCount}</p>
+                  {pendingOrdersCount > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                      要対応
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">未処理の発注</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Section with Tabs */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                登録部品数
-              </CardTitle>
-              <Package className="h-5 w-5 text-blue-500" />
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <BarChart3 className="h-5 w-5 text-indigo-500" />
+                    在庫推移グラフ
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    期間: {title}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PeriodSelector current={period} />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{totalParts}</p>
+              <Tabs defaultValue="overview" className="space-y-4">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="overview" className="flex items-center gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    全体在庫
+                  </TabsTrigger>
+                  <TabsTrigger value="parts" className="flex items-center gap-1.5">
+                    <Package className="h-3.5 w-3.5" />
+                    部品別
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview" className="space-y-0">
+                  <StockTrendChart data={stockTrendData} periodLabel={granularityLabel} />
+                </TabsContent>
+                <TabsContent value="parts" className="space-y-0">
+                  <PartStockChart parts={partOptions} trendMap={partTrendMap} periodLabel={granularityLabel} />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                総在庫数
-              </CardTitle>
-              <Boxes className="h-5 w-5 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">
-                {totalStock.toLocaleString()}
-              </p>
-            </CardContent>
-          </Card>
+          {/* Low Stock & Recent Transactions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Low Stock Alert */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <AlertTriangle className="h-5 w-5 text-orange-500" />
+                    在庫アラート
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    在庫100個以下の部品
+                  </CardDescription>
+                </div>
+                <Link href="/parts">
+                  <Button variant="outline" size="sm" className="gap-1">
+                    すべて表示
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-4">
+                {lowStockParts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <Boxes className="h-10 w-10 mb-2 opacity-40" />
+                    <p className="text-sm">在庫が少ない部品はありません</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {lowStockParts.map((part) => {
+                      const percentage = Math.min((part.stock / 100) * 100, 100);
+                      return (
+                        <div key={part.id} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant="outline" className="shrink-0 font-mono text-[10px] px-1.5">
+                                {part.code}
+                              </Badge>
+                              <span className="text-sm font-medium truncate">{part.name}</span>
+                            </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant={part.stock <= 10 ? "destructive" : "secondary"}
+                                  className={
+                                    part.stock <= 10
+                                      ? ""
+                                      : part.stock <= 50
+                                        ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-100"
+                                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 hover:bg-yellow-100"
+                                  }
+                                >
+                                  {part.stock}個
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {part.stock <= 10
+                                  ? "在庫が非常に少ないです"
+                                  : part.stock <= 50
+                                    ? "在庫が少なくなっています"
+                                    : "在庫に注意が必要です"}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <Progress
+                            value={percentage}
+                            className="h-1.5"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                在庫総額
-              </CardTitle>
-              <DollarSign className="h-5 w-5 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">
-                ¥{totalStockValue.toLocaleString()}
-              </p>
-            </CardContent>
-          </Card>
+            {/* Recent Transactions */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="h-5 w-5 text-blue-500" />
+                    最近の入出庫
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    直近の取引履歴
+                  </CardDescription>
+                </div>
+                <Link href="/stock">
+                  <Button variant="outline" size="sm" className="gap-1">
+                    すべて表示
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <Separator />
+              <CardContent className="p-0">
+                {recentTransactions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <ArrowLeftRight className="h-10 w-10 mb-2 opacity-40" />
+                    <p className="text-sm">入出庫履歴はありません</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">種別</TableHead>
+                        <TableHead>部品名</TableHead>
+                        <TableHead className="text-right w-16">数量</TableHead>
+                        <TableHead className="text-right w-24">担当 / 日付</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentTransactions.map((tx) => (
+                        <TableRow key={tx.id}>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                tx.type === "IN"
+                                  ? "default"
+                                  : tx.type === "OUT"
+                                    ? "destructive"
+                                    : "secondary"
+                              }
+                              className={
+                                tx.type === "IN"
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100"
+                                  : tx.type === "OUT"
+                                    ? ""
+                                    : ""
+                              }
+                            >
+                              {tx.type === "IN" ? "入庫" : tx.type === "OUT" ? "出庫" : "調整"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {tx.part.name}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {tx.type === "IN" ? "+" : tx.type === "OUT" ? "-" : ""}
+                            {tx.quantity}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="text-xs text-muted-foreground">
+                              {tx.user.name ?? tx.user.email}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(tx.createdAt).toLocaleDateString("ja-JP")}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                本日の入出庫
-              </CardTitle>
-              <Activity className="h-5 w-5 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{todayTransactions}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                承認待ち発注
-              </CardTitle>
-              <ShoppingCart className="h-5 w-5 text-orange-500" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{pendingOrdersCount}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Stock Trend Chart */}
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-indigo-500" />
-              在庫推移（{title}）
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <PeriodSelector current={period} />
-              <Link href="/stock">
-                <Button variant="ghost" size="sm">
-                  入出庫履歴
-                </Button>
+          {/* Quick Actions */}
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              クイックアクション
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Link href="/parts/new">
+                <Card className="group hover:border-blue-500/50 hover:shadow-md transition-all duration-200 cursor-pointer">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className="rounded-lg bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors">
+                      <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">部品を登録する</p>
+                      <p className="text-xs text-muted-foreground">マスタに新規追加</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/stock/new">
+                <Card className="group hover:border-emerald-500/50 hover:shadow-md transition-all duration-200 cursor-pointer">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className="rounded-lg bg-emerald-500/10 p-2.5 group-hover:bg-emerald-500/20 transition-colors">
+                      <ArrowLeftRight className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">入出庫を登録する</p>
+                      <p className="text-xs text-muted-foreground">在庫の変動を記録</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/users/new">
+                <Card className="group hover:border-violet-500/50 hover:shadow-md transition-all duration-200 cursor-pointer">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className="rounded-lg bg-violet-500/10 p-2.5 group-hover:bg-violet-500/20 transition-colors">
+                      <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">ユーザーを追加する</p>
+                      <p className="text-xs text-muted-foreground">新しいメンバーを招待</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/orders/new">
+                <Card className="group hover:border-orange-500/50 hover:shadow-md transition-all duration-200 cursor-pointer">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className="rounded-lg bg-orange-500/10 p-2.5 group-hover:bg-orange-500/20 transition-colors">
+                      <ShoppingCart className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">発注を作成する</p>
+                      <p className="text-xs text-muted-foreground">新規発注を登録</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </CardContent>
+                </Card>
               </Link>
             </div>
-          </CardHeader>
-          <CardContent>
-            <StockTrendChart data={stockTrendData} periodLabel={granularityLabel} />
-          </CardContent>
-        </Card>
-
-        {/* Per-Part Stock Trend Chart */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-blue-500" />
-              部品別 在庫推移（{title}）
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PartStockChart parts={partOptions} trendMap={partTrendMap} periodLabel={granularityLabel} />
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Low Stock Alert */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
-                在庫アラート（100個以下）
-              </CardTitle>
-              <Link href="/parts">
-                <Button variant="ghost" size="sm">
-                  すべて表示
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {lowStockParts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  在庫が少ない部品はありません。
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {lowStockParts.map((part) => (
-                    <div
-                      key={part.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <div>
-                        <span className="text-xs font-mono text-muted-foreground mr-2">
-                          {part.code}
-                        </span>
-                        <span className="text-sm font-medium">{part.name}</span>
-                      </div>
-                      <span
-                        className={`text-sm font-bold ${part.stock <= 10
-                          ? "text-red-600"
-                          : part.stock <= 50
-                            ? "text-orange-500"
-                            : "text-yellow-600"
-                          }`}
-                      >
-                        {part.stock}個
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Transactions */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-                最近の入出庫
-              </CardTitle>
-              <Link href="/stock">
-                <Button variant="ghost" size="sm">
-                  すべて表示
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {recentTransactions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  入出庫履歴はありません。
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {recentTransactions.map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${tx.type === "IN"
-                            ? "bg-green-100 text-green-800"
-                            : tx.type === "OUT"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-blue-100 text-blue-800"
-                            }`}
-                        >
-                          {tx.type === "IN" ? "入庫" : tx.type === "OUT" ? "出庫" : "調整"}
-                        </span>
-                        <div>
-                          <span className="text-sm font-medium">
-                            {tx.part.name}
-                          </span>
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            ×{tx.quantity}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">
-                          {tx.user.name ?? tx.user.email}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(tx.createdAt).toLocaleDateString("ja-JP")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <Link href="/parts/new">
-            <Card className="hover:bg-muted transition-colors cursor-pointer">
-              <CardContent className="flex items-center gap-3 py-4">
-                <Package className="h-6 w-6 text-blue-500" />
-                <span className="font-medium">部品を登録する</span>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/stock/new">
-            <Card className="hover:bg-muted transition-colors cursor-pointer">
-              <CardContent className="flex items-center gap-3 py-4">
-                <ArrowLeftRight className="h-6 w-6 text-green-500" />
-                <span className="font-medium">入出庫を登録する</span>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/users/new">
-            <Card className="hover:bg-muted transition-colors cursor-pointer">
-              <CardContent className="flex items-center gap-3 py-4">
-                <Activity className="h-6 w-6 text-purple-500" />
-                <span className="font-medium">ユーザーを追加する</span>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/orders/new">
-            <Card className="hover:bg-muted transition-colors cursor-pointer">
-              <CardContent className="flex items-center gap-3 py-4">
-                <ShoppingCart className="h-6 w-6 text-orange-500" />
-                <span className="font-medium">発注を作成する</span>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-      </main>
-    </div>
+          </div>
+        </main>
+      </div>
+    </TooltipProvider>
   );
 }

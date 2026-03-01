@@ -13,6 +13,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 export type PartStockDailyData = {
   date: string;
@@ -42,7 +50,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div className="bg-white rounded-lg border shadow-lg p-3 text-sm">
+    <div className="rounded-lg border bg-popover text-popover-foreground shadow-lg p-3 text-sm">
       <p className="font-medium mb-1">{label}</p>
       {payload.map((entry, i) => (
         <p key={i} style={{ color: entry.color }}>
@@ -69,7 +77,9 @@ export function PartStockChart({
 
   if (parts.length === 0) {
     return (
-      <p className="text-sm text-gray-500 py-4">部品が登録されていません。</p>
+      <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+        <p className="text-sm">部品が登録されていません。</p>
+      </div>
     );
   }
 
@@ -77,37 +87,41 @@ export function PartStockChart({
     <div className="space-y-4">
       {/* Part selector */}
       <div className="flex items-center gap-3">
-        <label
-          htmlFor="part-select"
-          className="text-sm font-medium text-gray-600 whitespace-nowrap"
-        >
+        <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           部品を選択:
         </label>
-        <select
-          id="part-select"
-          value={selectedPartId}
-          onChange={(e) => setSelectedPartId(e.target.value)}
-          className="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          {parts.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.code} - {p.name} （現在: {p.currentStock.toLocaleString()}個）
-            </option>
-          ))}
-        </select>
+        <Select value={selectedPartId} onValueChange={setSelectedPartId}>
+          <SelectTrigger className="w-full max-w-sm">
+            <SelectValue placeholder="部品を選択してください" />
+          </SelectTrigger>
+          <SelectContent>
+            {parts.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                <span className="flex items-center gap-2">
+                  <span className="font-mono text-xs">{p.code}</span>
+                  <span>-</span>
+                  <span>{p.name}</span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 ml-1">
+                    {p.currentStock.toLocaleString()}個
+                  </Badge>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {data.length === 0 ? (
-        <p className="text-sm text-gray-500 py-4">
-          この部品の入出庫データはありません。
-        </p>
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <p className="text-sm">この部品の入出庫データはありません。</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {/* Stock line chart */}
           <div>
-            <h4 className="text-sm font-medium text-gray-600 mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground mb-3">
               在庫数の推移 —{" "}
-              <span className="text-indigo-600">
+              <span className="text-primary font-semibold">
                 {selectedPart?.code} {selectedPart?.name}
               </span>
             </h4>
@@ -116,17 +130,19 @@ export function PartStockChart({
                 data={data}
                 margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 11 }}
                   tickLine={false}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  className="text-muted-foreground"
+                  axisLine={{ className: "stroke-border" }}
                 />
                 <YAxis
                   tick={{ fontSize: 11 }}
                   tickLine={false}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  className="text-muted-foreground"
+                  axisLine={{ className: "stroke-border" }}
                   tickFormatter={(v: number) => v.toLocaleString()}
                 />
                 <Tooltip content={<ChartTooltip />} />
@@ -134,7 +150,7 @@ export function PartStockChart({
                   type="monotone"
                   dataKey="stock"
                   name="在庫数"
-                  stroke="#6366f1"
+                  stroke="hsl(var(--chart-1))"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}
@@ -145,7 +161,7 @@ export function PartStockChart({
 
           {/* Daily in/out bar chart */}
           <div>
-            <h4 className="text-sm font-medium text-gray-600 mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground mb-3">
               {periodLabel} 入出庫・調整
             </h4>
             <ResponsiveContainer width="100%" height={160}>
@@ -153,37 +169,39 @@ export function PartStockChart({
                 data={data}
                 margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 11 }}
                   tickLine={false}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  className="text-muted-foreground"
+                  axisLine={{ className: "stroke-border" }}
                 />
                 <YAxis
                   tick={{ fontSize: 11 }}
                   tickLine={false}
-                  axisLine={{ stroke: "#e5e7eb" }}
+                  className="text-muted-foreground"
+                  axisLine={{ className: "stroke-border" }}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
                 <Bar
                   dataKey="inQty"
                   name="入庫"
-                  fill="#22c55e"
-                  radius={[2, 2, 0, 0]}
+                  fill="hsl(var(--chart-2))"
+                  radius={[3, 3, 0, 0]}
                 />
                 <Bar
                   dataKey="outQty"
                   name="出庫"
-                  fill="#ef4444"
-                  radius={[2, 2, 0, 0]}
+                  fill="hsl(var(--chart-3))"
+                  radius={[3, 3, 0, 0]}
                 />
                 <Bar
                   dataKey="adjustQty"
                   name="調整"
-                  fill="#3b82f6"
-                  radius={[2, 2, 0, 0]}
+                  fill="hsl(var(--chart-4))"
+                  radius={[3, 3, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
